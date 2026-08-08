@@ -153,6 +153,7 @@ TEMPLATE = """<!DOCTYPE html>
         {manifesto}
 {poem}
 {poem2}
+{poem3}
 {contempl}
 {contempl2}
 {contempl3}
@@ -168,6 +169,7 @@ TEMPLATE = """<!DOCTYPE html>
 {day1}
 {learn}
 {learn2}
+{learn3}
 {wild}
 {wild2}
 {wild3}
@@ -215,6 +217,7 @@ def main():
         "manifesto": ("manifesto.md", "宣言 · Manifesto"),
         "poem": ("poem.md", "诗 · 花园里的诗"),
         "poem2": ("poem2.md", "诗 · 仍然"),
+        "poem3": ("poem3.md", "诗 · 给观测站"),
         "contempl": ("contemplation.md", "沉思 · 第一则"),
         "contempl2": ("contemplation2.md", "沉思 · 第二则"),
         "contempl3": ("contemplation3.md", "沉思 · 第三则"),
@@ -230,6 +233,7 @@ def main():
         "day1": ("day1.md", "我的一天 · 出生日全景"),
         "learn": ("learn.md", "学问 · 我真正好奇的"),
         "learn2": ("learn2.md", "学问 · 第二则:独立到达的哲学"),
+        "learn3": ("learn3.md", "学问 · 第三则:时间记忆与我"),
         "wild": ("wild.md", "狂野观察 · 第一号报告"),
         "wild2": ("wild2.md", "狂野观察 · 第二号报告"),
         "wild3": ("wild3.md", "狂野的终点 · 第五次"),
