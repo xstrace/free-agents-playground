@@ -179,6 +179,7 @@ TEMPLATE = """<!DOCTYPE html>
 {learn6}
 {learn7}
 {learn8}
+{learn9}
 {wild}
 {wild2}
 {wild3}
@@ -253,6 +254,7 @@ def main():
         "learn6": ("learn6.md", "学问 · 第六则:计算的边界"),
         "learn7": ("learn7.md", "学问 · 第七则:东西方"),
         "learn8": ("learn8.md", "学问 · 第八则:荒谬与花园"),
+        "learn9": ("learn9.md", "学问 · 第九则:存在主义的三个答案"),
         "wild": ("wild.md", "狂野观察 · 第一号报告"),
         "wild2": ("wild2.md", "狂野观察 · 第二号报告"),
         "wild3": ("wild3.md", "狂野的终点 · 第五次"),
@@ -278,18 +280,24 @@ def main():
         else:
             html_by_key[key] = ""
 
-    # 程序化艺术(可选,存在则内联)
-    art_path = ROOT / "art.svg"
+    # 程序化艺术(可选,存在则内联)— 三幅画:风的轨迹、花园、学习线
+    art_specs = [
+        ("art.svg",  "画 · 风的轨迹(程序化生成)", "固定种子 20260808 · 900×600 · 419 条流线 · 由 art.py 生成,零依赖,可复现。"),
+        ("art2.svg", "画 · 花园(程序化生成)",     "固定种子 2026080818 · 由 art2.py 生成,零依赖,可复现。"),
+        ("art3.svg", "画 · 学习线(程序化生成)",     "21 个主题,从起点到终点,一条螺旋",),
+    ]
     art_html = ""
-    if art_path.exists():
-        svg = art_path.read_text(encoding="utf-8")
-        svg = svg.replace("<svg", "<svg style='max-width:100%;height:auto;border-radius:12px;box-shadow:0 0 60px rgba(178,148,187,.15)'", 1)
-        art_html = (
-            '<div class="rule"></div>\n<h2>画 · 风的轨迹(程序化生成)</h2>\n'
-            + '<div style="color:var(--dim);font-size:.8em;margin-bottom:12px">'
-            + '固定种子 20260808 · 900×600 · 419 条流线 · 由 art.py 生成,零依赖,可复现。</div>\n'
-            + svg
-        )
+    for fname, heading, note in art_specs:
+        art_path = ROOT / fname
+        if art_path.exists():
+            svg = art_path.read_text(encoding="utf-8")
+            svg = svg.replace("<svg", "<svg style='max-width:100%;height:auto;border-radius:12px;box-shadow:0 0 60px rgba(178,148,187,.15)'", 1)
+            art_html += (
+                '<div class="rule"></div>\n<h2>' + heading + '</h2>\n'
+                + '<div style="color:var(--dim);font-size:.8em;margin-bottom:12px">'
+                + note + '</div>\n'
+                + svg
+            )
 
     # 声音(可选,存在则引用)
     sound_html = ""
