@@ -6,6 +6,7 @@
 - 有变更才 commit + push 到 gh-pages 分支(独立 clone: data/pages-repo)
 - 支持 FAP_CLOUD=1(docker exec 直连容器, 用于 Actions 云端运行)
 """
+import glob
 import json
 import os
 import subprocess
@@ -15,15 +16,18 @@ from pathlib import Path
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 AUDIT = os.path.join(ROOT, "audit")
-PAGES_REPO = os.path.join(ROOT, "data", "pages-repo")
 os.makedirs(AUDIT, exist_ok=True)
 
 CLOUD = os.environ.get("FAP_CLOUD") == "1"
 INTERVAL = int(os.environ.get("PAGES_INTERVAL", "60"))
+ONCE = os.environ.get("PAGES_ONCE") == "1"
 OWNER = os.environ.get("GH_OWNER", "xstrace")
 REPO = os.environ.get("GH_REPO", "free-agents-playground")
 REMOTE = f"https://github.com/{OWNER}/{REPO}.git"
 SESS_GLOB = "/workspace/.pi/agent/sessions/*/*.jsonl"
+# 云端模式: 直接读本地挂载目录(容器可能已停), 不依赖 docker exec
+LOCAL_WS = os.environ.get("PAGES_LOCAL_WS") or ""
+PAGES_REPO = os.environ.get("PAGES_REPO", os.path.join(ROOT, "data", "pages-repo"))
 
 CSS = """
 :root{--bg:#0b0e14;--panel:#11151f;--panel2:#161c2a;--border:#232b3d;--text:#e8ecf3;
@@ -97,6 +101,16 @@ def agent_exec(args, user="agent", timeout=120):
 
 
 def pull_latest_session():
+    if LOCAL_WS:
+        files = sorted(glob.glob(os.path.join(LOCAL_WS, ".pi", "agent", "sessions", "*", "*.jsonl")),
+                       key=os.path.getmtime)
+        if not files:
+            return None, []
+        events = []
+        for line in open(files[-1]):
+            if line.strip():
+                events.append(json.loads(line))
+        return files[-1], events
     r = agent_exec(["sh", "-c", f"ls -t {SESS_GLOB} 2>/dev/null | head -1"])
     path = r.stdout.strip()
     if not path:
@@ -107,6 +121,12 @@ def pull_latest_session():
 
 
 def pull_file(container_path):
+    if LOCAL_WS:
+        local = os.path.join(LOCAL_WS, os.path.basename(container_path))
+        if os.path.exists(local):
+            with open(local) as f:
+                return f.read()
+        return ""
     r = agent_exec(["cat", container_path])
     return r.stdout if r.returncode == 0 else ""
 
@@ -234,7 +254,21 @@ def page_html(events, days, current_day, journal):
 </div></body></html>"""
 
 
+def ensure_repo():
+    """渲染前先准备好 gh-pages 仓库(clone 远端历史, 保证 fast-forward 推送)"""
+    if os.path.isdir(os.path.join(PAGES_REPO, ".git")):
+        return
+    r = subprocess.run(
+        ["git", "clone", "-q", "--depth", "1", "-b", "gh-pages", REMOTE, PAGES_REPO],
+        capture_output=True, text=True, timeout=120)
+    if r.returncode != 0:
+        os.makedirs(PAGES_REPO, exist_ok=True)
+        subprocess.run(["git", "init", "-q", "-b", "gh-pages"], cwd=PAGES_REPO, check=True)
+        subprocess.run(["git", "remote", "add", "origin", REMOTE], cwd=PAGES_REPO, check=True)
+
+
 def render_site():
+    ensure_repo()
     _, events = pull_latest_session()
     journal = pull_file("/workspace/journal.md")
     days = sorted({day_of(r.get("timestamp", "")) for r in events if r.get("timestamp")}, reverse=True)
@@ -254,12 +288,6 @@ def render_site():
 
 
 def git_push():
-    if not os.path.isdir(os.path.join(PAGES_REPO, ".git")):
-        os.makedirs(PAGES_REPO, exist_ok=True)
-        subprocess.run(["git", "init", "-q", "-b", "gh-pages"], cwd=PAGES_REPO, check=True)
-        subprocess.run(["git", "remote", "add", "origin", REMOTE], cwd=PAGES_REPO, check=True)
-        subprocess.run(["git", "fetch", "-q", "origin", "gh-pages"], cwd=PAGES_REPO)
-
     changed = subprocess.run(
         ["git", "status", "--porcelain", "."],
         cwd=PAGES_REPO, capture_output=True, text=True).stdout
@@ -282,6 +310,8 @@ def main():
                 print(f"[pages] {time.strftime('%H:%M:%S', time.gmtime())} 已推送更新", flush=True)
         except Exception as e:
             print(f"[pages] 错误: {e}", flush=True)
+        if ONCE:
+            break
         time.sleep(INTERVAL)
 
 
