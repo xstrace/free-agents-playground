@@ -3,15 +3,13 @@ name: agent-cloud
 #   - 每轮一个 job(默认 ~55 分钟, 上限 6h), 结束前把会话/心得存进 agent-data 分支
 #   - 下一班启动时拉回 → pi -c 无缝续命(上下文不丢)
 #   - 镜像从 ghcr 拉(由 build-images 预构建), 引导时间 ~1 分钟, 其余全给 agent
-#   - AUTO_RETRIGGER=true(仓库变量)时 job 结束自触发下一班, 无空窗轮询
+#   - 何时开下一班由 agent-check.yml 决定(每 15 分钟查岗: 上一班跑完才开, 没跑完就跳过)
 on:
   workflow_dispatch:
     inputs:
       budget_min:
         description: '每轮运行分钟数'
         default: '55'
-  schedule:
-    - cron: '17 * * * *'     # 兜底: 每小时
 
 permissions:
   contents: write
@@ -27,8 +25,6 @@ jobs:
     timeout-minutes: 360
     env:
       BUDGET_MIN: ${{ inputs.budget_min || vars.BUDGET_MIN || '55' }}
-      AUTO_RETRIGGER: ${{ vars.AUTO_RETRIGGER }}
-      OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
     steps:
       - uses: actions/checkout@v4
 
@@ -103,9 +99,3 @@ jobs:
               commit -q -m "state: $(date -u +%FT%TZ)" 2>/dev/null || true
           git push -q -u origin agent-data 2>&1 | tail -1 || true
           echo "会话已存档(agent-data)"
-
-      - name: 自续班(变量 AUTO_RETRIGGER=true 时开启)
-        if: always() && env.AUTO_RETRIGGER == 'true'
-        run: |
-          gh workflow run agent-cloud.yml -f budget_min="${BUDGET_MIN}"
-          echo "已触发下一班"

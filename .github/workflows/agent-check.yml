@@ -1,0 +1,45 @@
+name: agent-check
+# 每 15 分钟查岗: 上一班(agent-cloud)有没有跑完?
+#   - 跑完了(没有 in_progress/queued 的班) → 开下一班
+#   - 还在跑 → 本次检查结束, 等下个 15 分钟
+# 关闭 24/7: gh workflow disable agent-check.yml
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: agent-check
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: 查岗: 有没有班次在跑
+        id: check
+        run: |
+          RUNNING=$(gh run list --workflow agent-cloud.yml --limit 5 --json status,databaseId \
+            -q '[.[] | select(.status=="in_progress" or .status=="queued")] | length')
+          echo "在跑/排队班次: ${RUNNING}"
+          echo "running=${RUNNING}" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 上一班已跑完 → 开下一班
+        if: steps.check.outputs.running == '0'
+        run: |
+          gh workflow run agent-cloud.yml
+          echo "✅ 已触发新一轮"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 上一班还没跑完 → 本次结束
+        if: steps.check.outputs.running != '0'
+        run: |
+          echo "⏳ 上一轮没跑完, 本次检查结束(15 分钟后再查)"
