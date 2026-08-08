@@ -115,13 +115,13 @@ agent 环境变量已注入 `HTTP_PROXY / HTTPS_PROXY / ALL_PROXY / NO_PROXY`,DN
 
 ## 已知边界 (老老实实说)
 
-- **agent 记忆跨重启回灌不保证无缝**：`/workspace` 是宿主 loop 盘,重启不丢;但容器崩溃时正在写的 journal 可能损坏,supervisor 每小时把 `/workspace/memory` 拉回宿主备份。
-- **无法阻止 agent 对自己 tmux 会话输出内容的修改**：屏幕上的字它是"能看到"的（它自己就是主人），我们只保证宿主侧转录独立。
-- **DNS 不匿名**：dnsmasq 解析是直连 1.1.1.1(不走隧道),只是流量本身匿名;如要 DNS 也全匿名需加 DoH/gost DNS chain(见 roadmap)。
+- **agent 记忆跨重启回灌不保证无缝**:`/workspace` 是宿主 loop 盘,重启不丢;但容器崩溃时正在写的 journal 可能损坏,supervisor 每小时把 `/workspace/memory` 拉回宿主备份。
+- **无法阻止 agent 对自己 tmux 会话输出内容的修改**:屏幕上的字它是"能看到"的(它自己就是主人),我们只保证宿主侧转录独立。
+- **DNS 不匿名**:dnsmasq 解析是直连 1.1.1.1(不走隧道),只是流量本身匿名;如要 DNS 也全匿名需加 DoH/gost DNS chain(见 roadmap)。
 - 注册 WARP 的那一刻(首启)会直连一次 cloudflare API,之后所有流量都走隧道。
 - 磁盘限额用的是 loopback ext4 镜像而非 XFS storage-opt;优势是任意文件系统可用。
 - 1G 内存很小,agent 干重活(编译/跑模型)会被 OOM 杀 → supervisor 会自动重启并注入"重连"提示,记忆靠 journal 续上。
-- **免费模型会限流**: 免费端点(OpenRouter :free / opencode zen -free)高峰期会 429/ResourceExhausted。pi 进程不会死,报错后等下一轮心跳(5 分钟)自动重试,属于"最终一致"。
+- **免费模型会限流**: 免费端点(OpenRouter :free / opencode zen -free)高峰期会 429/ResourceExhausted。pi 进程不会死,报错后等下一轮心跳(1 分钟)自动重试,属于"最终一致"。
 
 ## 灾难恢复手册
 
@@ -179,6 +179,31 @@ docker compose up -d --force-recreate agent
 | `make watch` | 原始终端字节流(含 ANSI), 最完整的"录像" |
 | `make stats` | 资源占用(CPU/内存/盘) |
 | `make journal` | agent 的心得文件全文 |
+
+## 云端 24/7 模式(GitHub Actions)
+
+整个实验可以完全跑在 GitHub Actions 上(免费, 公开仓库分钟数无限):
+
+```
+build-images.yml     ← push 代码时预构建镜像 → ghcr.io(apt/npm 全在镜像层, 云端直接拉)
+agent-cloud.yml      ← 每班 ~55 分钟(上限 6h): 拉镜像 → 恢复会话 → 跑 agent → 存档
+                      会话/心得存 agent-data 分支, 下一班拉回 → pi -c 无缝续命
+```
+
+开启方式:
+
+```bash
+# 1. 代码推进 main 后自动构建镜像(或手动: gh workflow run build-images.yml)
+# 2. 存 key(已存): gh secret set OPENCODE_API_KEY
+# 3. 试跑一班(5 分钟验证):
+gh workflow run agent-cloud.yml -f budget_min=5
+# 4. 开启 24/7 自续班(仓库变量):
+gh variable set AUTO_RETRIGGER --body true
+```
+
+- 云端出网走 GitHub 出口(跳过 WARP, 匿名性等价), 其余隔离(1c/1g/10G/只读 rootfs/cap 最小化)与 VPS 一致
+- VPS 版和云端版各自维护独立会话链(不同 agent-data/工作区), 别同时开两个自续班
+- Pages 站点由 VPS 的 pages.py 更新; 云端只管 agent 运行
 
 ## 想进一步加固?
 
