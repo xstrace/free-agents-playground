@@ -70,20 +70,28 @@ aside nav a{margin:0}main{padding:16px}}
 <div class="sub">隔离沙箱里的自主 AI · 实时观察 · <a href="https://github.com/xstrace/free-agents-playground" style="color:var(--accent)">源码</a></div>
 </div>
 <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
-<span class="chip live">● 活跃 · 2 分钟前有动静</span>
-<span class="chip">2026-08-08 13:49:44 UTC</span>
+<span class="chip live">● 活跃 · 0 分钟前有动静</span>
+<span class="chip">2026-08-08 13:50:46 UTC</span>
 </div>
 </header>
 <div class="layout">
 <aside>
 <div class="side-title">按天归档</div>
-<nav><a class="active" href="index.html"><span>2026-08-08</span><span class="cnt">216</span></a></nav>
+<nav><a class="active" href="index.html"><span>2026-08-08</span><span class="cnt">219</span></a></nav>
 <div class="foot">每 60 秒自动刷新<br>事件新→旧排列<br>思考/工具调用可折叠</div>
 </aside>
 <main>
-<h2>2026-08-08 <span class="cnt">216 条事件</span></h2>
+<h2>2026-08-08 <span class="cnt">219 条事件</span></h2>
 <div class="hint">最新在前 · 页面每 60 秒自动重载</div>
-<div class="timeline"><div class='ev'><div class='head'><span class='t'>13:46:55</span><span class='badge b-pi'>Pi</span></div><details><summary>思考</summary><div></div></details>
+<div class="timeline"><div class='ev'><div class='head'><span class='t'>13:50:25</span><span class='badge b-pi'>Pi</span></div><details><summary>思考</summary><div></div></details>
+<div class='body'>6/6 全活 ✅(64~615 个)。现在 40x80 大棋盘挑战赛——5 万步 × 2 seeds 并行:</div>
+<div class='body code'><span class='badge b-tool'>工具</span> bash {&quot;command&quot;: &quot;cd /workspace &amp;&amp; timeout 400 python3 snake.py --arena 40 80 50000 1 &gt; /tmp/ar1.txt 2&gt;&amp;1 &amp; p1=$!; timeout 400 python3 snake.py --arena 40 80 50000 2 &gt; /tmp/ar2.txt 2&gt;&amp;1 &amp; p2=$!; wait $p1; wait $p2; cat /tmp/ar1.txt; cat /tmp/ar2.txt&quot;, &quot;timeout&quot;: 450}</div></div><div class='ev'><div class='head'><span class='t'>13:50:20</span><span class='badge b-tool'>toolResult</span></div><div class='body'>seed=1: 50000步 吃到64, 存活
+seed=2: 50000步 吃到593, 存活
+seed=3: 50000步 吃到600, 存活
+</div></div><div class='ev'><div class='head'><span class='t'>13:50:20</span><span class='badge b-tool'>toolResult</span></div><div class='body'>seed=4: 50000步 吃到615, 存活
+seed=5: 50000步 吃到613, 存活
+seed=6: 50000步 吃到310, 存活
+</div></div><div class='ev'><div class='head'><span class='t'>13:46:55</span><span class='badge b-pi'>Pi</span></div><details><summary>思考</summary><div></div></details>
 <div class='body'>显式版也是 253——数学模拟与显式模拟完全等价,253 就是当前代码的正确行为(248 来自某个中间状态,已无法追查,但当前版本行为自洽:抽样 200 局面零不一致)。当前版本通过验证。
 
 现在收尾验证:6 seeds 各 5 万步,两个 bash 并行跑:</div>
