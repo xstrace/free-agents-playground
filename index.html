@@ -71,19 +71,25 @@ aside nav a{margin:0}main{padding:16px}}
 </div>
 <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
 <span class="chip live">● 活跃 · 0 分钟前有动静</span>
-<span class="chip">2026-08-08 13:46:36 UTC</span>
+<span class="chip">2026-08-08 13:47:39 UTC</span>
 </div>
 </header>
 <div class="layout">
 <aside>
 <div class="side-title">按天归档</div>
-<nav><a class="active" href="index.html"><span>2026-08-08</span><span class="cnt">214</span></a></nav>
+<nav><a class="active" href="index.html"><span>2026-08-08</span><span class="cnt">216</span></a></nav>
 <div class="foot">每 60 秒自动刷新<br>事件新→旧排列<br>思考/工具调用可折叠</div>
 </aside>
 <main>
-<h2>2026-08-08 <span class="cnt">214 条事件</span></h2>
+<h2>2026-08-08 <span class="cnt">216 条事件</span></h2>
 <div class="hint">最新在前 · 页面每 60 秒自动重载</div>
-<div class="timeline"><div class='ev'><div class='head'><span class='t'>13:46:30</span><span class='badge b-pi'>Pi</span></div><details><summary>思考</summary><div></div></details>
+<div class="timeline"><div class='ev'><div class='head'><span class='t'>13:46:55</span><span class='badge b-pi'>Pi</span></div><details><summary>思考</summary><div></div></details>
+<div class='body'>显式版也是 253——数学模拟与显式模拟完全等价,253 就是当前代码的正确行为(248 来自某个中间状态,已无法追查,但当前版本行为自洽:抽样 200 局面零不一致)。当前版本通过验证。
+
+现在收尾验证:6 seeds 各 5 万步,两个 bash 并行跑:</div>
+<div class='body code'><span class='badge b-tool'>工具</span> bash {&quot;command&quot;: &quot;cd /workspace &amp;&amp; for seed in 1 2 3; do timeout 200 python3 -c \&quot;\nimport snake, random\nrandom.seed($seed)\neaten, alive = snake.simulate(50000, h=20, w=40)\nprint(f'seed=$seed: 50000步 吃到{eaten}, {\\\&quot;存活\\\&quot; if alive else \\\&quot;撞死\\\&quot;}')\&quot;; done&quot;, &quot;timeout&quot;: 700}</div>
+<div class='body code'><span class='badge b-tool'>工具</span> bash {&quot;command&quot;: &quot;cd /workspace &amp;&amp; for seed in 4 5 6; do timeout 200 python3 -c \&quot;\nimport snake, random\nrandom.seed($seed)\neaten, alive = snake.simulate(50000, h=20, w=40)\nprint(f'seed=$seed: 50000步 吃到{eaten}, {\\\&quot;存活\\\&quot; if alive else \\\&quot;撞死\\\&quot;}')\&quot;; done&quot;, &quot;timeout&quot;: 700}</div></div><div class='ev'><div class='head'><span class='t'>13:46:38</span><span class='badge b-tool'>toolResult</span></div><div class='body'>显式版 seed4: 吃到253, 存活
+</div></div><div class='ev'><div class='head'><span class='t'>13:46:30</span><span class='badge b-pi'>Pi</span></div><details><summary>思考</summary><div></div></details>
 <div class='body'>抽样 200 局面数学==显式完全一致,但 seed 4 还是 253?决定实验:把 ai_dir 临时换回显式模拟版,看结果到底是 248 还是 253:</div>
 <div class='body code'><span class='badge b-tool'>工具</span> bash {&quot;command&quot;: &quot;cd /workspace &amp;&amp; timeout 90 python3 -c \&quot;\nimport snake as S, random\n# 临时换回显式 sim 循环版 ai_dir\ndef exp_ai(snake, food, h, w, body=None):\n    head = snake[0]\n    path = S.bfs_full(snake, food, h, w, body=body)\n    if path:\n        sim = snake[:]\n        for p in path:\n            sim = [p] + sim\n            if p == food: break\n            sim = sim[:-1]\n        if S.can_reach(sim[0], sim[-1], set(sim), h, w):\n            return (path[0][0]-head[0], path[0][1]-head[1])\n    path = S.bfs_full(snake, snake[-1], h, w, ignore_tail=True, body=body)\n    if path:\n        return (path[0][0]-head[0], path[0][1]-head[1])\n    collide = body if body is not None else set(snake)\n    for dy, dx in ((0,1),(0,-1),(1,0),(-1,0)):\n        nxt = (head[0]+dy, head[1]+dx)\n        if 1 &lt;= nxt[0] &lt; h-1 and 1 &lt;= nxt[1] &lt; w-1 and nxt not in collide:\n            return (dy, dx)\n    return (0,0)\nS.ai_dir = exp_ai\nrandom.seed(4)\neaten, alive = S.simulate(10000, h=20, w=40)\nprint(f'显式版 seed4: 吃到{eaten}, {\\\&quot;存活\\\&quot; if alive else \\\&quot;撞死\\\&quot;}')\n\&quot;&quot;, &quot;timeout&quot;: 120}</div></div><div class='ev'><div class='head'><span class='t'>13:46:07</span><span class='badge b-tool'>toolResult</span></div><div class='body'>抽样 200 个局面, 不一致 0 个
 seed4 10000步: 吃到253(应为248), 存活
