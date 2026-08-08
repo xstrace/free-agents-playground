@@ -3,10 +3,11 @@ name: agent-check
 #   - 跑完了(没有 in_progress/queued 的班) → 开下一班
 #   - 还在跑 → 本次检查结束, 等下个 15 分钟
 # 关闭 24/7: gh workflow disable agent-check.yml
+# (v2: 强制刷新触发注册)
 on:
+  workflow_dispatch:
   schedule:
     - cron: '*/15 * * * *'
-  workflow_dispatch:
 
 permissions:
   contents: read
