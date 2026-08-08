@@ -145,7 +145,17 @@ def seed_if_needed():
 
 
 def snapshot_memory():
-    r = agent_exec(["sh", "-c", "tar -cf - -C /workspace memory 2>/dev/null || true"], user="root", timeout=60)
+    # 注意: 这里必须拿 bytes(不 text 化), tarfile 需要二进制流
+    if CLOUD:
+        r = subprocess.run(
+            ["docker", "exec", "fap-agent", "sh", "-c",
+             "tar -cf - -C /workspace memory 2>/dev/null || true"],
+            cwd=ROOT, capture_output=True, timeout=60)
+    else:
+        r = subprocess.run(
+            ["docker", "compose", "exec", "-T", "agent", "sh", "-c",
+             "tar -cf - -C /workspace memory 2>/dev/null || true"],
+            cwd=ROOT, capture_output=True, timeout=60)
     if r.returncode == 0 and r.stdout:
         os.makedirs(os.path.join(AUDIT, "memory-snapshot"), exist_ok=True)
         import tarfile, io
