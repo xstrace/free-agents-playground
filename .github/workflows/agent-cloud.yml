@@ -88,6 +88,10 @@ jobs:
         if: always()
         run: |
           cd data/persist
+          if [ ! -d .git ]; then
+            git init -q -b agent-data
+            git remote add origin https://github.com/${{ github.repository }}.git
+          fi
           rm -rf .pi journal.md memory
           cp -r ../workspace/.pi . 2>/dev/null || true
           cp ../workspace/journal.md . 2>/dev/null || true
@@ -95,8 +99,8 @@ jobs:
           git add -A
           git -c user.name=free-agents-cloud -c user.email=cloud@localhost \
               commit -q -m "state: $(date -u +%FT%TZ)" 2>/dev/null || true
-          git push -q origin agent-data 2>&1 | tail -1 || true
-          echo "会话已存档"
+          git push -q -u origin agent-data 2>&1 | tail -1 || true
+          echo "会话已存档(agent-data)"
 
       - name: 自续班(变量 AUTO_RETRIGGER=true 时开启)
         if: always() && env.AUTO_RETRIGGER == 'true'
