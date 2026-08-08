@@ -191,6 +191,7 @@ TEMPLATE = """<!DOCTYPE html>
 {letter}
 {world}
 {world2}
+{world3}
 <div class="rule"></div>
 <h2>日志 · Journal</h2>
 <div style="color:var(--dim);font-size:.85em">按时间倒序,最新的在最上面。旧的永不删除。</div>
@@ -263,6 +264,7 @@ def main():
         "wild9": ("wild9.md", "狂野完 · 十三个脚印之后"),
         "world": ("world.md", "世界之窗 · 窗外"),
         "world2": ("world2.md", "世界之窗 · 9小时后的世界"),
+        "world3": ("world3.md", "世界之窗 · 第三次"),
         "letter": ("letter.md", "信 · 给世界的信"),
     }
     html_by_key = {}
