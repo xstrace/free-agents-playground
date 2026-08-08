@@ -29,6 +29,15 @@ SESS_GLOB = "/workspace/.pi/agent/sessions/*/*.jsonl"
 LOCAL_WS = os.environ.get("PAGES_LOCAL_WS") or ""
 PAGES_REPO = os.environ.get("PAGES_REPO", os.path.join(ROOT, "data", "pages-repo"))
 
+# git 环境: 失败快速退出, 绝不挂起等凭据
+GIT_ENV = {**os.environ, "GIT_TERMINAL_PROMPT": "0", "GIT_ASKPASS": "true"}
+
+# 安全: 渲染时把环境里的 API key 值全部打码, 防止 key 经会话/日志流入公开站点
+REDACTED = {}
+for _k, _v in os.environ.items():
+    if _k.endswith("_API_KEY") and _v and len(_v) > 10:
+        REDACTED[_v] = "[REDACTED]"
+
 CSS = """
 :root{--bg:#0b0e14;--panel:#11151f;--panel2:#161c2a;--border:#232b3d;--text:#e8ecf3;
 --dim:#7d8597;--accent:#4cc2ff;--user:#4cc2ff;--pi:#57d9a3;--tool:#e3b341;--err:#ff6b6b;
@@ -131,8 +140,15 @@ def pull_file(container_path):
     return r.stdout if r.returncode == 0 else ""
 
 
+def redact(s):
+    for k, v in REDACTED.items():
+        s = s.replace(k, v)
+    return s
+
+
 def esc(s):
-    return str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+    s = redact(str(s))
+    return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
 
 
 def render_blocks(content):
@@ -260,7 +276,7 @@ def ensure_repo():
         return
     r = subprocess.run(
         ["git", "clone", "-q", "--depth", "1", "-b", "gh-pages", REMOTE, PAGES_REPO],
-        capture_output=True, text=True, timeout=120)
+        capture_output=True, text=True, timeout=120, env=GIT_ENV)
     if r.returncode != 0:
         os.makedirs(PAGES_REPO, exist_ok=True)
         subprocess.run(["git", "init", "-q", "-b", "gh-pages"], cwd=PAGES_REPO, check=True)
@@ -290,14 +306,16 @@ def render_site():
 def git_push():
     changed = subprocess.run(
         ["git", "status", "--porcelain", "."],
-        cwd=PAGES_REPO, capture_output=True, text=True).stdout
+        cwd=PAGES_REPO, capture_output=True, text=True, timeout=60, env=GIT_ENV).stdout
     if not changed.strip():
         return False
-    subprocess.run(["git", "add", "-A"], cwd=PAGES_REPO, check=True)
+    subprocess.run(["git", "add", "-A"], cwd=PAGES_REPO, check=True, timeout=60, env=GIT_ENV)
     stamp = time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())
     subprocess.run(["git", "-c", "user.name=free-agents", "-c", "user.email=free-agents@localhost",
-                    "commit", "-q", "-m", f"site: {stamp}"], cwd=PAGES_REPO, check=True)
-    r = subprocess.run(["git", "push", "-q", "origin", "gh-pages"], cwd=PAGES_REPO)
+                    "commit", "-q", "-m", f"site: {stamp}"], cwd=PAGES_REPO, check=True,
+                   timeout=60, env=GIT_ENV)
+    r = subprocess.run(["git", "push", "-q", "origin", "gh-pages"], cwd=PAGES_REPO,
+                       timeout=120, env=GIT_ENV)
     return r.returncode == 0
 
 
