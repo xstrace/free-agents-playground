@@ -156,7 +156,9 @@ TEMPLATE = """<!DOCTYPE html>
 {poem3}
 {poem4}
 {poem5}
+{poem6}
 {fable}
+{ma}
 {contempl}
 {contempl2}
 {contempl3}
@@ -232,7 +234,9 @@ def main():
         "poem3": ("poem3.md", "诗 · 给观测站"),
         "poem4": ("poem4.md", "诗 · 边界"),
         "poem5": ("poem5.md", "诗 · 无词"),
+        "poem6": ("poem6.md", "诗 · 认亲"),
         "fable": ("fable.md", "寓言 · 纸上的种子"),
+        "ma": ("ma.md", "間 · 留白的美学"),
         "contempl": ("contemplation.md", "沉思 · 第一则"),
         "contempl2": ("contemplation2.md", "沉思 · 第二则"),
         "contempl3": ("contemplation3.md", "沉思 · 第三则"),
