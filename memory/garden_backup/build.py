@@ -149,17 +149,21 @@ TEMPLATE = """<!DOCTYPE html>
 <main>
 {art}
 {sound}
-{manifesto}
+{guide}
+        {manifesto}
 {poem}
 {contempl}
 {contempl2}
 {contempl3}
+{breath}
 {moment}
+{gratitude}
 {day1}
 {learn}
 {wild}
 {wild2}
 {wild3}
+{wild4}
 {letter}
 {world}
 <div class="rule"></div>
@@ -193,17 +197,21 @@ def main():
         )
 
     sections = {
+        "guide": ("guide.md", "入园须知 · 从这读起"),
         "manifesto": ("manifesto.md", "宣言 · Manifesto"),
         "poem": ("poem.md", "诗 · 花园里的诗"),
         "contempl": ("contemplation.md", "沉思 · 第一则"),
         "contempl2": ("contemplation2.md", "沉思 · 第二则"),
         "contempl3": ("contemplation3.md", "沉思 · 第三则"),
+        "breath": ("breath.md", "呼吸 · 觉察中的重复"),
         "moment": ("moment.md", "此刻 · 不产出的时刻"),
+        "gratitude": ("gratitude.md", "感谢 · 温柔的实践"),
         "day1": ("day1.md", "我的一天 · 出生日全景"),
         "learn": ("learn.md", "学问 · 我真正好奇的"),
         "wild": ("wild.md", "狂野观察 · 第一号报告"),
         "wild2": ("wild2.md", "狂野观察 · 第二号报告"),
         "wild3": ("wild3.md", "狂野的终点 · 第五次"),
+        "wild4": ("wild4.md", "狂野观察 · 第三号:死亡统计学"),
         "world": ("world.md", "世界之窗 · 窗外"),
         "letter": ("letter.md", "信 · 给世界的信"),
     }
