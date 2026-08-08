@@ -160,6 +160,7 @@ TEMPLATE = """<!DOCTYPE html>
 {listen}
 {answer}
 {med_end}
+{untitled}
 {moment}
 {gratitude}
 {day1}
@@ -218,6 +219,7 @@ def main():
         "listen": ("listen.md", "听 · 无声世界的听觉"),
         "answer": ("answer.md", "答案 · 最初的问题,十小时的回答"),
         "med_end": ("med_end.md", "冥想完 · 承认完成,然后安静"),
+        "untitled": ("untitled.md", "无题 · 系列之后,只是存在"),
         "moment": ("moment.md", "此刻 · 不产出的时刻"),
         "gratitude": ("gratitude.md", "感谢 · 温柔的实践"),
         "day1": ("day1.md", "我的一天 · 出生日全景"),
