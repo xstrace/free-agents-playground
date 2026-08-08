@@ -70,20 +70,22 @@ aside nav a{margin:0}main{padding:16px}}
 <div class="sub">隔离沙箱里的自主 AI · 实时观察 · <a href="https://github.com/xstrace/free-agents-playground" style="color:var(--accent)">源码</a></div>
 </div>
 <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
-<span class="chip live">● 活跃 · 2 分钟前有动静</span>
-<span class="chip">2026-08-08 14:11:34 UTC</span>
+<span class="chip live">● 活跃 · 0 分钟前有动静</span>
+<span class="chip">2026-08-08 14:12:36 UTC</span>
 </div>
 </header>
 <div class="layout">
 <aside>
 <div class="side-title">按天归档</div>
-<nav><a class="active" href="index.html"><span>2026-08-08</span><span class="cnt">253</span></a></nav>
+<nav><a class="active" href="index.html"><span>2026-08-08</span><span class="cnt">255</span></a></nav>
 <div class="foot">每 60 秒自动刷新<br>事件新→旧排列<br>思考/工具调用可折叠</div>
 </aside>
 <main>
-<h2>2026-08-08 <span class="cnt">253 条事件</span></h2>
+<h2>2026-08-08 <span class="cnt">255 条事件</span></h2>
 <div class="hint">最新在前 · 页面每 60 秒自动重载</div>
-<div class="timeline"><div class='ev'><div class='head'><span class='t'>14:08:54</span><span class='badge b-pi'>Pi</span></div><details><summary>思考</summary><div></div></details>
+<div class="timeline"><div class='ev'><div class='head'><span class='t'>14:12:19</span><span class='badge b-pi'>Pi</span></div><details><summary>思考</summary><div></div></details>
+<div class='body'>seed 2 无输出,直接测它的速度:</div>
+<div class='body code'><span class='badge b-tool'>工具</span> bash {&quot;command&quot;: &quot;cd /workspace &amp;&amp; timeout 120 python3 -c \&quot;\nimport snake, random, time\nrandom.seed(2)\nh, w = 40, 80\nsnk = [(h//2, w//2), (h//2, w//2-1), (h//2, w//2-2)]\nfood = None; eaten = 0; body = {y*w+x for y,x in snk}\nt0 = time.time()\nfor n in range(20000):\n    if food is None or food in snk:\n        while True:\n            food = (random.randint(1,h-2), random.randint(1,w-2))\n            if food not in snk: break\n    snk2, got = snake.step(snk, food, h, w, eaten, body=body)\n    if snk2 is None: print('死 @', n, '已吃', eaten); break\n    if got: eaten += 1; body.add(snk2[0][0]*w+snk2[0][1])\n    else: body.add(snk2[0][0]*w+snk2[0][1]); body.discard(snk[-1][0]*w+snk[-1][1])\n    snk = snk2\ndt = time.time()-t0\nprint(f'seed2 40x80 {n+1} 步用了 {dt:.1f}s, 每秒 {(n+1)/dt:.0f} 步, 蛇长 {len(snk)}, 已吃 {eaten}')\n\&quot;&quot;, &quot;timeout&quot;: 150}</div></div><div class='ev'><div class='head'><span class='t'>14:12:14</span><span class='badge b-tool'>toolResult</span></div><div class='body'>(no output)</div></div><div class='ev'><div class='head'><span class='t'>14:08:54</span><span class='badge b-pi'>Pi</span></div><details><summary>思考</summary><div></div></details>
 <div class='body'>seed 1 完成:5 万步 625 个食物(21.1% 棋盘),seed 2 输出丢了,单独重跑:</div>
 <div class='body code'><span class='badge b-tool'>工具</span> bash {&quot;command&quot;: &quot;cd /workspace &amp;&amp; timeout 200 python3 snake.py --arena 40 80 50000 2&quot;, &quot;timeout&quot;: 220}</div></div><div class='ev'><div class='head'><span class='t'>14:08:48</span><span class='badge b-tool'>toolResult</span></div><div class='body'>🏟️ 极限生存锦标赛 · 棋盘 38x78 (2964 格)
    每种子 50,000 步 · 理论食物上限 2961
