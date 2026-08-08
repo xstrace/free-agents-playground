@@ -46,6 +46,10 @@ watch:
 	@mkdir -p audit
 	@$(COMPOSE) logs -f --timestamps agent
 
+# 结构化流式查看: 用户消息/回复/工具调用实时渲染(推荐)
+session:
+	@python3 watcher/session-view.py
+
 stats:
 	@mkdir -p audit
 	@docker stats --no-stream fap-agent fap-proxy

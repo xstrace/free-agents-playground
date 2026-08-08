@@ -1,0 +1,13 @@
+[Unit]
+Description=free-agents workspace loop disk (10G ext4)
+Before=docker.service
+After=local-fs.target
+
+[Mount]
+What=/root/projects/free-agents-playground/data/workspace.img
+Where=/root/projects/free-agents-playground/data/workspace
+Type=ext4
+Options=loop
+
+[Install]
+WantedBy=multi-user.target

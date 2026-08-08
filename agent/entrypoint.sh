@@ -16,8 +16,20 @@ if [ "$(id -u)" = "0" ]; then
 fi
 
 # ── 以下以 agent 用户运行 ───────────────────────────────
+# su 会把 HOME 重置为 /home/agent(只读), 强制回 /workspace
+export HOME=/workspace
 mkdir -p /workspace/memory
 cd /workspace
+
+# pi 首次运行配置: 信任项目目录 + 关遥测(避免启动时打扰/外联)
+mkdir -p ~/.pi/agent
+if [ ! -f ~/.pi/agent/settings.json ]; then
+    printf '{"defaultProjectTrust":"always","enableInstallTelemetry":false}\n' > ~/.pi/agent/settings.json
+fi
+# 人设/规则放进 AGENTS.md: pi 每次启动自动加载(cwd 上下文文件)
+if [ ! -f /workspace/AGENTS.md ]; then
+    cp /opt/prompts/seed.md /workspace/AGENTS.md
+fi
 
 # 转录管道: tmux 屏幕 -> agent.log(docker logs 由 PID1 转发) + 心跳 + 本地回看
 # 注意: tmux pipe-pane 把目标命令的 stdout 指到 /dev/null, 必须显式写文件

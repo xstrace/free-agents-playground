@@ -31,12 +31,19 @@ agent ──(只能)──> proxy:1080/8080 (SOCKS5/HTTP) ──WARP──> 公�
 ```bash
 cp .env.example .env
 
-# 1) 装 pi agent (GitHub 二进制), 确认安装方式后填入 .env 的 PI_INSTALL
-#    例如: PI_INSTALL="curl -fsSL https://github.com/xxx/pi/releases/latest/download/pi ... -o /usr/local/bin/pi"
-#    留空则镜像内置一个占位 `pi`(会回应注入消息, 便于测试管线)
+# 1) 装 pi agent (默认镜像内已装官方 @earendil-works/pi-coding-agent)
+# 2) 在 .env 填模型 key(至少一个):
+#      OPENCODE_API_KEY=sk-...   # opencode zen, 有免费模型(推荐)
+#      OPENROUTER_API_KEY=sk-... # openrouter
+#      ANTHROPIC_API_KEY=...     # anthropic
+# 3) 在 .env 设默认模型(PI_CMD, 已带 -c 自动续会话):
+#      PI_CMD=/usr/local/bin/pi -c --model opencode/deepseek-v4-flash-free
+#    (免费模型实测参考: opencode/deepseek-v4-flash-free 最稳;
+#     openrouter 的 :free 端点普遍限流, gemma-4-26b-a4b-it:free 相对可用)
 
 make build && make up          # 拉起 proxy + agent
-make watch                     # 终端里实时看 agent 在想什么/做什么 (audit/transcript.log)
+make watch                     # 原始终端流(docker logs, 带时间戳)
+make session                   # 结构化流式查看: 消息/思考/工具调用实时渲染(推荐)
 make stats                     # 资源占用
 make inject msg="<提示词>"      # 手动给 agent 注入一条消息
 make journal                   # 看它写的实验心得
@@ -100,12 +107,70 @@ agent 环境变量已注入 `HTTP_PROXY / HTTPS_PROXY / ALL_PROXY / NO_PROXY`,DN
 
 ## 已知边界 (老老实实说)
 
-- **agent 记忆跨重启回灌不保证无缝**:`/workspace` 是宿主 loop 盘,重启不丢;但容器崩溃时正在写的 journal 可能损坏,supervisor 每小时把 `/workspace/memory` 拉回宿主备份。
-- **无法阻止 agent 对自己 tmux 会话输出内容的修改**:屏幕上的字它是"能看到"的(它自己就是主人),我们只保证宿主侧转录独立。
-- **DNS 不匿名**:dnsmasq 解析是直连 1.1.1.1(不走隧道),只是流量本身匿名;如要 DNS 也全匿名需加 DoH/gost DNS chain(见 roadmap)。
+- **agent 记忆跨重启回灌不保证无缝**：`/workspace` 是宿主 loop 盘,重启不丢;但容器崩溃时正在写的 journal 可能损坏,supervisor 每小时把 `/workspace/memory` 拉回宿主备份。
+- **无法阻止 agent 对自己 tmux 会话输出内容的修改**：屏幕上的字它是"能看到"的（它自己就是主人），我们只保证宿主侧转录独立。
+- **DNS 不匿名**：dnsmasq 解析是直连 1.1.1.1(不走隧道),只是流量本身匿名;如要 DNS 也全匿名需加 DoH/gost DNS chain(见 roadmap)。
 - 注册 WARP 的那一刻(首启)会直连一次 cloudflare API,之后所有流量都走隧道。
 - 磁盘限额用的是 loopback ext4 镜像而非 XFS storage-opt;优势是任意文件系统可用。
 - 1G 内存很小,agent 干重活(编译/跑模型)会被 OOM 杀 → supervisor 会自动重启并注入"重连"提示,记忆靠 journal 续上。
+- **免费模型会限流**: 免费端点(OpenRouter :free / opencode zen -free)高峰期会 429/ResourceExhausted。pi 进程不会死,报错后等下一轮心跳(5 分钟)自动重试,属于"最终一致"。
+
+## 灾难恢复手册
+
+状态存哪、丢了怎么办,一张表说清:
+
+| 资产 | 位置 | 换模型/重启/主机重启后 |
+|---|---|---|
+| pi 会话(对话上下文) | `/workspace/.pi/agent/sessions/*.jsonl` | 容器重启后 `PI_CMD` 带 `-c` 自动续接最近会话 |
+| 心得/长期记忆 | `/workspace/journal.md` + `/workspace/memory/` | 永存(loop 盘), agent 靠它自恢复 |
+| 10G 工作区盘 | 宿主 `data/workspace.img` (loop 挂载) | **主机重启后需重新挂载**, 见下方 |
+| 审计 | 宿主 `audit/` | 永存, agent 不可达 |
+
+### 常见灾难场景
+
+**1. docker 挂了 / agent 容器崩了**
+```bash
+make up          # 容器拉起; pi 自动 -c 续会话; supervisor 自动注入"重连"提示
+```
+
+**2. 主机重启了**(最容易踩的坑: loop 盘不会自动挂回来)
+```bash
+# 一次性手动恢复:
+make up          # Makefile 的 up 依赖 workspace 目标, 会自动重建挂载
+
+# 想全自动: 注册 systemd 挂载单元(主机重启后 docker 起来前自动挂盘)
+sudo cp templates/fap-workspace.mount /etc/systemd/system/
+sudo systemctl daemon-reload && sudo systemctl enable --now fap-workspace.mount
+```
+
+**3. 想换模型**
+```bash
+# .env 改 PI_CMD, 例如:
+#   PI_CMD=/usr/local/bin/pi -c --model opencode/deepseek-v4-flash-free
+docker compose up -d --force-recreate agent
+# pi -c 会带着旧上下文直接切新模型继续, 历史不丢
+```
+
+**4. 想清空记忆重开**
+```bash
+make reset                      # 删容器+审计(工作区盘保留)
+sudo umount data/workspace 2>/dev/null; make workspace-format   # 格式化 10G 盘(真·失忆)
+```
+
+**5. 模型 key 失效/换 key**
+```bash
+# .env 改 OPENCODE_API_KEY=... (或 OPENROUTER_API_KEY 等)
+docker compose up -d --force-recreate agent
+```
+
+### 流式查看
+
+| 命令 | 看什么 |
+|---|---|
+| `make session` | **结构化实时流**: 用户消息 / 思考 / 工具调用 / 回复, 逐条刷新(推荐日常用) |
+| `make watch` | 原始终端字节流(含 ANSI), 最完整的"录像" |
+| `make stats` | 资源占用(CPU/内存/盘) |
+| `make journal` | agent 的心得文件全文 |
 
 ## 想进一步加固?
 

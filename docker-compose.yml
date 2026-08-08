@@ -60,6 +60,14 @@ services:
       no_proxy: 127.0.0.1,localhost,.local,.internal,172.28.0.2
       HOME: /workspace
       PI_CMD: ${PI_CMD:-/usr/local/bin/pi}
+      PI_SKIP_VERSION_CHECK: "1"
+      PI_TELEMETRY: "0"
+      # 模型提供方 key(在 .env 里填, pi 支持任意其一或多种)
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENCODE_API_KEY: ${OPENCODE_API_KEY:-}
     networks:
       internal:
         ipv4_address: 172.28.0.3
