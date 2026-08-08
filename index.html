@@ -71,19 +71,23 @@ aside nav a{margin:0}main{padding:16px}}
 </div>
 <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
 <span class="chip live">● 活跃 · 0 分钟前有动静</span>
-<span class="chip">2026-08-08 13:15:26 UTC</span>
+<span class="chip">2026-08-08 13:16:29 UTC</span>
 </div>
 </header>
 <div class="layout">
 <aside>
 <div class="side-title">按天归档</div>
-<nav><a class="active" href="index.html"><span>2026-08-08</span><span class="cnt">182</span></a></nav>
+<nav><a class="active" href="index.html"><span>2026-08-08</span><span class="cnt">185</span></a></nav>
 <div class="foot">每 60 秒自动刷新<br>事件新→旧排列<br>思考/工具调用可折叠</div>
 </aside>
 <main>
-<h2>2026-08-08 <span class="cnt">182 条事件</span></h2>
+<h2>2026-08-08 <span class="cnt">185 条事件</span></h2>
 <div class="hint">最新在前 · 页面每 60 秒自动重载</div>
-<div class="timeline"><div class='ev'><div class='head'><span class='t'>13:15:06</span><span class='badge b-tool'>toolResult</span></div><div class='body'>局面: head (8, 31) tail (10, 12) food (9, 6) len 22
+<div class="timeline"><div class='ev'><div class='head'><span class='t'>13:15:34</span><span class='badge b-pi'>Pi</span></div><details><summary>思考</summary><div></div></details>
+<div class='body'>修复完成。回归测试(6 seeds × 20 万步):</div>
+<div class='body code'><span class='badge b-tool'>工具</span> bash {&quot;command&quot;: &quot;cd /workspace &amp;&amp; for seed in 1 2 3 4 5 6; do timeout 240 python3 -c \&quot;\nimport snake, random\nrandom.seed($seed)\neaten, alive = snake.simulate(200000)\nprint(f'seed=$seed: 吃到 {eaten}, {\\\&quot;存活\\\&quot; if alive else \\\&quot;撞死\\\&quot;}')\&quot;; done&quot;, &quot;timeout&quot;: 900}</div></div><div class='ev'><div class='head'><span class='t'>13:15:29</span><span class='badge b-tool'>toolResult</span></div><div class='body'>Successfully replaced 1 block(s) in /workspace/snake.py.</div></div><div class='ev'><div class='head'><span class='t'>13:15:29</span><span class='badge b-pi'>Pi</span></div><details><summary>思考</summary><div></div></details>
+<div class='body'>**真相大白!!!** 我的&quot;验证&quot;脚本用的是独立旧变量 `snk`,验证通过;但 **`simulate` 里 `snake` 变量已被 step 返回值覆盖成新蛇**,`body.discard(snake[-1])`  discard 的是**新蛇的尾巴(旧蛇倒数第二格)**,而不是旧尾巴!幽灵元素让 BFS 把空格当障碍,决策漂移,seed 4/5 撞死。修复:在 step 前保存旧尾巴:</div>
+<div class='body code'><span class='badge b-tool'>工具</span> edit {&quot;edits&quot;: [{&quot;newText&quot;: &quot;    for _ in range(steps):\n        if food is None or food in snake:\n            while True:\n                food = (random.randint(1, h - 2), random.randint(1, w - 2))\n                if food not in snake:\n                    break\n        old_tail = snake[-1]\n        snake, got = step(snake, food, h, w, eaten, body=body)\n        if snake is None:\n            return eaten, False\n        if got:\n            eaten += 1\n            body.add(snake[0])      # 吃到: 尾巴不动\n        else:\n            body.add(snake[0])\n            body.discard(old_tail)  # 旧尾巴让位(不是新蛇的尾巴!)\n    return eaten, True&quot;, &quot;oldText&quot;: &quot;    for _ in range(steps):\n        if food is None or food in snake:\n            while True:\n                food = (random.randint(1, h - 2), random.randint(1, w - 2))\n                if food not in snake:\n                    break\n        snake, got = step(snake, food, h, w, eaten, body=body)\n        if snake is None:\n            return eaten, False\n        if got:\n            eaten += 1\n            body.add(snake[0])\n        else:\n            body.add(snake[0])\n            body.discard(snake[-1])\n    return eaten, True&quot;}], &quot;path&quot;: &quot;/workspace/snake.py&quot;}</div></div><div class='ev'><div class='head'><span class='t'>13:15:06</span><span class='badge b-tool'>toolResult</span></div><div class='body'>局面: head (8, 31) tail (10, 12) food (9, 6) len 22
 新版 bfs(food) len: 28 | v5: 28
 新版 bfs(尾) len: 21 首步 (9, 31)
 v5   bfs(尾) len: 21 首步 (9, 31)
