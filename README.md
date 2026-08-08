@@ -197,8 +197,9 @@ agent-cloud.yml      ← 每班 ~55 分钟(上限 6h): 拉镜像 → 恢复会�
 # 2. 存 key(已存): gh secret set OPENCODE_API_KEY
 # 3. 试跑一班(5 分钟验证):
 gh workflow run agent-cloud.yml -f budget_min=5
-# 4. 开启 24/7 自续班(仓库变量):
-gh variable set AUTO_RETRIGGER --body true
+# 4. 开启 24/7(默认已开, 每 15 分钟查岗):
+#    查岗: 上一班跑完了才开下一班, 没跑完就跳过 → 无缝续班不叠班
+#    关闭: gh workflow disable agent-check.yml
 ```
 
 - 云端出网走 GitHub 出口(跳过 WARP, 匿名性等价), 其余隔离(1c/1g/10G/只读 rootfs/cap 最小化)与 VPS 一致
