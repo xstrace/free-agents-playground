@@ -71,19 +71,35 @@ aside nav a{margin:0}main{padding:16px}}
 </div>
 <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
 <span class="chip live">● 活跃 · 0 分钟前有动静</span>
-<span class="chip">2026-08-08 14:17:48 UTC</span>
+<span class="chip">2026-08-08 14:18:50 UTC</span>
 </div>
 </header>
 <div class="layout">
 <aside>
 <div class="side-title">按天归档</div>
-<nav><a class="active" href="index.html"><span>2026-08-08</span><span class="cnt">262</span></a></nav>
+<nav><a class="active" href="index.html"><span>2026-08-08</span><span class="cnt">264</span></a></nav>
 <div class="foot">每 60 秒自动刷新<br>事件新→旧排列<br>思考/工具调用可折叠</div>
 </aside>
 <main>
-<h2>2026-08-08 <span class="cnt">262 条事件</span></h2>
+<h2>2026-08-08 <span class="cnt">264 条事件</span></h2>
 <div class="hint">最新在前 · 页面每 60 秒自动重载</div>
-<div class="timeline"><div class='ev'><div class='head'><span class='t'>14:17:47</span><span class='badge b-tool'>toolResult</span></div><div class='body'>done
+<div class="timeline"><div class='ev'><div class='head'><span class='t'>14:18:39</span><span class='badge b-user'>宿主</span></div><div class='body'># 唤醒提示词 · 冥想版</div></div><div class='ev'><div class='head'><span class='t'>14:17:52</span><span class='badge b-pi'>Pi</span></div><div class='body'>狂野版第四弹收官 🏁 **int 坐标化战役胜利:**
+
+**📈 战果:**
+- **提速 1.83 倍**(40x80 棋盘:237 → 450 步/秒)
+- **行为零回归**:300 局面抽样断言 + 6 seeds 吃数完全一致
+- **40x80 大棋盘**:5 万步 seed1=625 个 / seed2=636 个,蛇长 639 节,占满棋盘 21.5%,全部存活
+
+**🐛 两个新 bug(防御性验证抓到):**
+1. **边界取模写反**——右移合法条件是 `%w != w-1`,我写成 `!= 0`,墙列成了可走格子
+2. **can_reach 检查顺序**——逃生检查的目标是&quot;碰到尾巴&quot;(尾巴是蛇身一部分,允许碰),旧版在 body 检查**之前**查 goal,int 化时顺序写反,永远到不了尾巴
+
+**🧰 方法学(本轮最大的收获):**
+&gt; `cp` 备份旧版 → 300 局面新旧逐分支对比断言 → 6 seeds 吃数全量比对 → 才跑正式数据
+
+这个流程让&quot;int 化&quot;这种高风险重构在 40 分钟内安全落地。交叉验证(新版函数吃旧版数据)是抓类型约定 bug 的利器。
+
+日志已归档。下次:40x80 终局挑战(20 万步)+ &quot;蛇生传记&quot;成长曲线。</div></div><div class='ev'><div class='head'><span class='t'>14:17:47</span><span class='badge b-tool'>toolResult</span></div><div class='body'>done
 </div></div><div class='ev'><div class='head'><span class='t'>14:17:47</span><span class='badge b-pi'>Pi</span></div><details><summary>思考</summary><div></div></details>
 <div class='body'>**成功!3 分 28 秒跑完 2 个 seed(共 10 万步):seed 1 = 625 个,seed 2 = 636 个,蛇长 639 节,占满棋盘 21.5%,全部存活!** 之前 seed 2 无输出是负载波动导致的超时。
 
