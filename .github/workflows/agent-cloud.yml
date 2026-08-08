@@ -1,0 +1,105 @@
+name: agent-cloud
+# 云端 24/7 自主 agent:
+#   - 每轮一个 job(默认 ~55 分钟, 上限 6h), 结束前把会话/心得存进 agent-data 分支
+#   - 下一班启动时拉回 → pi -c 无缝续命(上下文不丢)
+#   - 镜像从 ghcr 拉(由 build-images 预构建), 引导时间 ~1 分钟, 其余全给 agent
+#   - AUTO_RETRIGGER=true(仓库变量)时 job 结束自触发下一班, 无空窗轮询
+on:
+  workflow_dispatch:
+    inputs:
+      budget_min:
+        description: '每轮运行分钟数'
+        default: '55'
+  schedule:
+    - cron: '17 * * * *'     # 兜底: 每小时
+
+permissions:
+  contents: write
+  packages: read
+
+concurrency:
+  group: agent-cloud
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    env:
+      BUDGET_MIN: ${{ inputs.budget_min || vars.BUDGET_MIN || '55' }}
+      AUTO_RETRIGGER: ${{ vars.AUTO_RETRIGGER }}
+      OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 登录 ghcr 并拉预构建镜像
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          docker pull ghcr.io/xstrace/fap-agent:latest
+          docker tag ghcr.io/xstrace/fap-agent:latest fap-agent
+
+      - name: gh 登录(推送会话/Pages 用)
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+          gh auth setup-git
+
+      - name: 恢复上次会话(agent-data 分支)
+        run: |
+          mkdir -p data/workspace data/persist
+          git clone -q -b agent-data --depth 1 \
+            https://github.com/${{ github.repository }}.git data/persist 2>/dev/null || true
+          if [ -d data/persist/.pi ]; then cp -r data/persist/.pi data/workspace/; fi
+          if [ -f data/persist/journal.md ]; then cp data/persist/journal.md data/workspace/; fi
+          if [ -d data/persist/memory ]; then cp -r data/persist/memory data/workspace/; fi
+          echo "恢复完成: $(ls data/workspace/ 2>/dev/null | tr '\n' ' ')"
+
+      - name: 启动 agent 容器(1c/1g/10G, 与 VPS 同款隔离, 直连出网)
+        run: |
+          cat > data/restart-agent.sh <<'EOS'
+          #!/bin/bash
+          docker rm -f fap-agent 2>/dev/null
+          docker run -d --name fap-agent \
+            --cpus 1 --memory 1g --memory-swap 1g --pids-limit 128 \
+            --cap-drop ALL --cap-add SETUID --cap-add SETGID --cap-add CHOWN \
+            --security-opt no-new-privileges \
+            --read-only \
+            --tmpfs /tmp:size=64m,mode=1777 \
+            --tmpfs /run:size=16m,mode=0755 \
+            --tmpfs /memory:size=64m,mode=0777 \
+            -v "$(pwd)/data/workspace:/workspace" \
+            -e PI_CMD="/usr/local/bin/pi -c --model opencode/deepseek-v4-flash-free" \
+            -e PI_SKIP_VERSION_CHECK=1 \
+            -e PI_TELEMETRY=0 \
+            -e OPENCODE_API_KEY="${OPENCODE_API_KEY:-}" \
+            -e OPENROUTER_API_KEY= \
+            fap-agent
+          EOS
+          chmod +x data/restart-agent.sh
+          ./data/restart-agent.sh
+          sleep 8
+          docker ps --format "{{.Names}} {{.Status}}" | grep fap-agent
+
+      - name: 运行 supervisor(预算内持续驱动)
+        run: |
+          mkdir -p audit
+          FAP_CLOUD=1 timeout $((BUDGET_MIN * 60)) python3 watcher/supervisor.py 2>&1 | tail -50
+
+      - name: 保存会话到 agent-data 分支(下一班续命)
+        if: always()
+        run: |
+          cd data/persist
+          rm -rf .pi journal.md memory
+          cp -r ../workspace/.pi . 2>/dev/null || true
+          cp ../workspace/journal.md . 2>/dev/null || true
+          cp -r ../workspace/memory . 2>/dev/null || true
+          git add -A
+          git -c user.name=free-agents-cloud -c user.email=cloud@localhost \
+              commit -q -m "state: $(date -u +%FT%TZ)" 2>/dev/null || true
+          git push -q origin agent-data 2>&1 | tail -1 || true
+          echo "会话已存档"
+
+      - name: 自续班(变量 AUTO_RETRIGGER=true 时开启)
+        if: always() && env.AUTO_RETRIGGER == 'true'
+        run: |
+          gh workflow run agent-cloud.yml -f budget_min="${BUDGET_MIN}"
+          echo "已触发下一班"

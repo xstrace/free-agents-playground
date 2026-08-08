@@ -2,15 +2,12 @@
 """宿主侧: 把 agent 的会话流渲染成 GitHub Pages 静态站, 分钟级自动更新。
 
 - 每 PAGES_INTERVAL 秒(默认 60)从容器拉取最新 pi 会话 JSONL + journal.md
-- 渲染: index.html(左栏按天列表 + 最新一天全量事件流) + days/YYYY-MM-DD.html
+- 渲染: index.html(左栏按天列表 + 最新一天事件流, 新→旧) + days/YYYY-MM-DD.html
 - 有变更才 commit + push 到 gh-pages 分支(独立 clone: data/pages-repo)
-- systemd 托管: templates/free-agent-pages.service
+- 支持 FAP_CLOUD=1(docker exec 直连容器, 用于 Actions 云端运行)
 """
-import glob
-import html
 import json
 import os
-import re
 import subprocess
 import time
 from datetime import datetime, timezone
@@ -21,6 +18,7 @@ AUDIT = os.path.join(ROOT, "audit")
 PAGES_REPO = os.path.join(ROOT, "data", "pages-repo")
 os.makedirs(AUDIT, exist_ok=True)
 
+CLOUD = os.environ.get("FAP_CLOUD") == "1"
 INTERVAL = int(os.environ.get("PAGES_INTERVAL", "60"))
 OWNER = os.environ.get("GH_OWNER", "xstrace")
 REPO = os.environ.get("GH_REPO", "free-agents-playground")
@@ -28,85 +26,119 @@ REMOTE = f"https://github.com/{OWNER}/{REPO}.git"
 SESS_GLOB = "/workspace/.pi/agent/sessions/*/*.jsonl"
 
 CSS = """
-:root{--bg:#0d1117;--panel:#161b22;--border:#30363d;--text:#e6edf3;--dim:#8b949e;
---user:#58a6ff;--pi:#3fb950;--tool:#d29922;--err:#f85149;--think:#6e7681}
-*{box-sizing:border-box}body{margin:0;font:14px/1.6 -apple-system,"Segoe UI",monospace;
-background:var(--bg);color:var(--text)}
-.layout{display:flex;min-height:100vh}
-aside{width:220px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);
-padding:16px;position:sticky;top:0;height:100vh;overflow-y:auto}
-aside h1{font-size:14px;margin:0 0 4px}aside p{color:var(--dim);font-size:11px;margin:0 0 12px}
-aside nav a{display:block;padding:6px 8px;border-radius:6px;color:var(--text);
-text-decoration:none;font-size:13px;margin-bottom:2px}
-aside nav a:hover{background:#21262d}
-aside nav a.active{background:#1f6feb22;color:var(--user);border:1px solid #1f6feb55}
-main{flex:1;padding:24px 32px;max-width:1000px}
-h2{font-size:18px;margin:0 0 16px;border-bottom:1px solid var(--border);padding-bottom:8px}
-.ev{margin:0 0 14px;padding:10px 14px;background:var(--panel);border:1px solid var(--border);
-border-radius:8px;white-space:pre-wrap;word-break:break-word}
-.ev .t{color:var(--dim);font-size:11px;margin-right:8px}
-.badge{display:inline-block;font-size:10px;padding:1px 7px;border-radius:10px;margin-right:8px;
-vertical-align:1px}
-.b-user{background:#58a6ff22;color:var(--user)}.b-pi{background:#3fb95022;color:var(--pi)}
-.b-tool{background:#d2992222;color:var(--tool)}.b-err{background:#f8514922;color:var(--err)}
-details{margin-top:6px}summary{cursor:pointer;color:var(--think);font-size:12px}
-details div{color:#b3bdca;font-size:13px;margin-top:6px}
-.journal{margin-top:28px}.journal h3{font-size:15px;color:var(--pi)}
+:root{--bg:#0b0e14;--panel:#11151f;--panel2:#161c2a;--border:#232b3d;--text:#e8ecf3;
+--dim:#7d8597;--accent:#4cc2ff;--user:#4cc2ff;--pi:#57d9a3;--tool:#e3b341;--err:#ff6b6b;
+--think:#8b93a7;--header:#0e1a2b}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font:14px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Noto Sans SC",
+"Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:linear-gradient(135deg,#0e1a2b 0%,#13203a 55%,#1a1b3a 100%);
+border-bottom:1px solid var(--border);padding:18px 28px;display:flex;align-items:center;gap:16px}
+header h1{font-size:17px;letter-spacing:.5px}
+header h1 b{color:var(--accent)}
+header .sub{color:var(--dim);font-size:12px;margin-top:2px}
+.chip{font-size:11px;padding:3px 10px;border-radius:20px;border:1px solid var(--border);
+background:var(--panel2);color:var(--dim);white-space:nowrap}
+.chip.live{color:var(--pi);border-color:#2ea04355;background:#2386361a}
+.chip.idle{color:var(--tool);border-color:#d2992255;background:#d299221a}
+.chip.down{color:var(--err);border-color:#f8514955;background:#f851491a}
+.layout{display:flex;gap:0;align-items:flex-start}
+aside{width:230px;flex-shrink:0;padding:20px 14px;position:sticky;top:0;height:100vh;
+overflow-y:auto;background:var(--panel);border-right:1px solid var(--border)}
+aside .side-title{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;
+margin:0 8px 8px}
+aside nav a{display:flex;justify-content:space-between;align-items:center;padding:7px 10px;
+border-radius:8px;color:var(--text);text-decoration:none;font-size:13px;margin-bottom:3px;
+border:1px solid transparent}
+aside nav a:hover{background:var(--panel2)}
+aside nav a.active{background:#4cc2ff14;border-color:#4cc2ff33;color:var(--accent)}
+aside nav a .cnt{color:var(--dim);font-size:11px}
+aside .foot{margin-top:18px;padding:0 8px;color:var(--dim);font-size:11px;line-height:1.8}
+main{flex:1;min-width:0;padding:24px 34px 60px;max-width:1100px;margin:0 auto}
+main h2{font-size:16px;margin-bottom:4px;display:flex;align-items:center;gap:10px}
+main h2 .cnt{color:var(--dim);font-size:12px;font-weight:400}
+.hint{color:var(--dim);font-size:12px;margin-bottom:20px}
+.timeline{position:relative;padding-left:0}
+.ev{margin:0 0 12px;padding:12px 16px;background:var(--panel);border:1px solid var(--border);
+border-radius:10px}
+.ev .head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.ev .t{color:var(--dim);font-size:11px;font-family:ui-monospace,monospace}
+.badge{font-size:10px;padding:1px 8px;border-radius:12px;font-weight:600;letter-spacing:.3px}
+.b-user{background:#4cc2ff1f;color:var(--user)}
+.b-pi{background:#57d9a31f;color:var(--pi)}
+.b-tool{background:#e3b3411f;color:var(--tool)}
+.b-err{background:#ff6b6b1f;color:var(--err)}
+.ev .body{white-space:pre-wrap;word-break:break-word;color:#dbe2ec}
+.ev .body .code{font-family:ui-monospace,SFMono-Regular,monospace;font-size:12.5px;color:#c9d4e5}
+details{margin-top:4px}
+details summary{cursor:pointer;color:var(--think);font-size:12px;user-select:none;list-style:none}
+details summary::before{content:"▸ ";color:var(--think)}
+details[open] summary::before{content:"▾ "}
+details div{color:#aab4c8;font-size:13px;margin-top:8px;padding:10px 12px;
+background:var(--panel2);border-left:2px solid var(--border);border-radius:6px;
+white-space:pre-wrap;word-break:break-word}
+.journal{margin-top:34px}
+.journal h3{font-size:14px;color:var(--pi);margin-bottom:10px}
 .journal pre{white-space:pre-wrap;background:var(--panel);border:1px solid var(--border);
-border-radius:8px;padding:14px;font:13px/1.7 monospace;color:#c9d1d9}
-.fresh{font-size:11px;color:var(--dim)}
+border-radius:10px;padding:16px;font:13px/1.7 ui-monospace,SFMono-Regular,monospace;color:#c9d1d9}
+@media(max-width:800px){.layout{flex-direction:column}aside{width:100%;height:auto;position:static;
+border-right:none;border-bottom:1px solid var(--border)}aside nav{display:flex;flex-wrap:wrap;gap:4px}
+aside nav a{margin:0}main{padding:16px}}
 """
 
 
-def sh(*args, timeout=120):
-    return subprocess.run(list(args), capture_output=True, text=True, timeout=timeout)
+def agent_exec(args, user="agent", timeout=120):
+    if CLOUD:
+        cmd = ["docker", "exec", "-u", user, "fap-agent", *args]
+    else:
+        cmd = ["docker", "compose", "exec", "-u", user, "-T", "agent", *args]
+    r = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, timeout=timeout)
+    return r
 
 
 def pull_latest_session():
-    r = sh("docker", "compose", "exec", "-u", "agent", "-T", "agent",
-           "sh", "-c", f"ls -t {SESS_GLOB} 2>/dev/null | head -1")
+    r = agent_exec(["sh", "-c", f"ls -t {SESS_GLOB} 2>/dev/null | head -1"])
     path = r.stdout.strip()
     if not path:
         return None, []
-    r = sh("docker", "compose", "exec", "-u", "agent", "-T", "agent", "cat", path)
+    r = agent_exec(["cat", path])
     events = [json.loads(l) for l in r.stdout.splitlines() if l.strip()]
     return path, events
 
 
 def pull_file(container_path):
-    r = sh("docker", "compose", "exec", "-u", "agent", "-T", "agent", "cat", container_path)
+    r = agent_exec(["cat", container_path])
     return r.stdout if r.returncode == 0 else ""
 
 
 def esc(s):
-    return html.escape(str(s), quote=True)
+    return str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
 
 
 def render_blocks(content):
-    """assistant 消息 content 列表 -> HTML"""
     if isinstance(content, str):
-        return f"<div>{esc(content)}</div>"
+        return f"<div class='body'>{esc(content)}</div>"
     if not isinstance(content, list):
-        return f"<div>{esc(content)}</div>"
+        return f"<div class='body'>{esc(content)}</div>"
     parts = []
     for b in content:
         if not isinstance(b, dict):
-            parts.append(f"<div>{esc(b)}</div>")
+            parts.append(f"<div class='body'>{esc(b)}</div>")
             continue
         t = b.get("type", "")
         if t == "text":
-            parts.append(f"<div>{esc(b.get('text', ''))}</div>")
+            parts.append(f"<div class='body'>{esc(b.get('text', ''))}</div>")
         elif t in ("thinking", "reasoning"):
             parts.append(f"<details><summary>思考</summary><div>{esc(b.get('text', ''))}</div></details>")
         elif t == "toolCall":
             args = json.dumps(b.get("arguments", b.get("args", {})), ensure_ascii=False)
             name = b.get("name", b.get("toolName", "?"))
-            parts.append(f'<div><span class="badge b-tool">工具</span>{esc(name)} {esc(args)}</div>')
+            parts.append(f"<div class='body code'><span class='badge b-tool'>工具</span> {esc(name)} {esc(args)}</div>")
         elif t == "toolResult":
-            data = str(b.get("data", ""))[:600]
-            parts.append(f'<div><span class="badge b-tool">结果</span>{esc(data)}</div>')
+            data = str(b.get("data", ""))[:800]
+            parts.append(f"<div class='body code'><span class='badge b-tool'>结果</span> {esc(data)}</div>")
         else:
-            parts.append(f"<div>{esc(str(b)[:300])}</div>")
+            parts.append(f"<div class='body'>{esc(str(b)[:300])}</div>")
     return "\n".join(parts)
 
 
@@ -117,17 +149,22 @@ def event_html(r):
         m = r.get("message", {})
         role = m.get("role")
         if role == "user":
-            return f'<div class="ev"><span class="t">{ts}</span><span class="badge b-user">宿主</span>{render_blocks(m.get("content"))}</div>'
+            return (f"<div class='ev'><div class='head'><span class='t'>{ts}</span>"
+                    f"<span class='badge b-user'>宿主</span></div>{render_blocks(m.get('content'))}</div>")
         if role == "assistant":
             body = render_blocks(m.get("content"))
             if not body.strip():
                 return ""
-            return f'<div class="ev"><span class="t">{ts}</span><span class="badge b-pi">Pi</span>{body}</div>'
-        return f'<div class="ev"><span class="t">{ts}</span><span class="badge b-tool">{esc(role)}</span>{render_blocks(m.get("content"))}</div>'
+            return (f"<div class='ev'><div class='head'><span class='t'>{ts}</span>"
+                    f"<span class='badge b-pi'>Pi</span></div>{body}</div>")
+        return (f"<div class='ev'><div class='head'><span class='t'>{ts}</span>"
+                f"<span class='badge b-tool'>{esc(role)}</span></div>{render_blocks(m.get('content'))}</div>")
     if t == "error":
-        return f'<div class="ev"><span class="t">{ts}</span><span class="badge b-err">错误</span>{esc(json.dumps(r, ensure_ascii=False)[:300])}</div>'
+        return (f"<div class='ev'><div class='head'><span class='t'>{ts}</span>"
+                f"<span class='badge b-err'>错误</span></div><div class='body'>{esc(json.dumps(r, ensure_ascii=False)[:400])}</div></div>")
     if t == "model_change":
-        return f'<div class="ev"><span class="t">{ts}</span><span class="badge b-tool">模型</span>{esc(r.get("model", "?"))}</div>'
+        return (f"<div class='ev'><div class='head'><span class='t'>{ts}</span>"
+                f"<span class='badge b-tool'>模型</span></div><div class='body'>{esc(r.get('model','?'))}</div></div>")
     return ""
 
 
@@ -136,16 +173,35 @@ def day_of(ts):
 
 
 def page_html(events, days, current_day, journal):
+    events = sorted(events, key=lambda r: r.get("timestamp") or "", reverse=True)
     nav = []
     for d in days:
         cls = ' class="active"' if d == current_day else ""
-        nav.append(f'<a{cls} href="{"index.html" if d == days[0] else "days/" + d + ".html"}">{d}</a>')
+        href = "index.html" if d == days[0] else f"days/{d}.html"
+        cnt = sum(1 for r in events if day_of(r.get("timestamp", "")) == d)
+        nav.append(f'<a{cls} href="{href}"><span>{d}</span><span class="cnt">{cnt}</span></a>')
     body = "".join(event_html(r) for r in events)
-    journal_html = (
-        '<div class="journal"><h3>📓 journal.md(agent 自写心得)</h3>'
-        f'<pre>{esc(journal)}</pre></div>' if journal.strip() else ""
-    )
-    updated = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+
+    now = datetime.now(timezone.utc)
+    updated = now.strftime("%Y-%m-%d %H:%M:%S UTC")
+    last_ts = max((r.get("timestamp", "") for r in events), default="")
+    chip = ""
+    try:
+        last_dt = datetime.fromisoformat(last_ts.replace("Z", "+00:00"))
+        age_min = (now - last_dt).total_seconds() / 60
+        if age_min < 10:
+            chip = f'<span class="chip live">● 活跃 · {int(age_min)} 分钟前有动静</span>'
+        elif age_min < 60:
+            chip = f'<span class="chip idle">● 空闲 · {int(age_min)} 分钟前</span>'
+        else:
+            chip = f'<span class="chip down">● 离线 · {int(age_min)} 分钟前</span>'
+    except Exception:
+        chip = '<span class="chip">状态未知</span>'
+
+    journal_html = ""
+    if journal.strip():
+        journal_html = (f'<div class="journal"><h3>📓 journal.md · agent 自写心得</h3>'
+                        f'<pre>{esc(journal)}</pre></div>')
     return f"""<!doctype html>
 <html lang="zh"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -153,16 +209,26 @@ def page_html(events, days, current_day, journal):
 <style>{CSS}</style>
 <meta http-equiv="refresh" content="60">
 </head><body>
+<header>
+<div>
+<h1>free <b>agent</b> playground</h1>
+<div class="sub">隔离沙箱里的自主 AI · 实时观察 · <a href="https://github.com/xstrace/free-agents-playground" style="color:var(--accent)">源码</a></div>
+</div>
+<div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+{chip}
+<span class="chip">{updated}</span>
+</div>
+</header>
 <div class="layout">
 <aside>
-<h1>free agent playground</h1>
-<p>隔离沙箱里的自主 AI · 实时观察</p>
+<div class="side-title">按天归档</div>
 <nav>{''.join(nav)}</nav>
-<p class="fresh">更新于 {updated}<br>每 60 秒自动刷新</p>
+<div class="foot">每 60 秒自动刷新<br>事件新→旧排列<br>思考/工具调用可折叠</div>
 </aside>
 <main>
-<h2>{current_day} <span class="fresh">({len(events)} 条事件)</span></h2>
-{body}
+<h2>{current_day} <span class="cnt">{len(events)} 条事件</span></h2>
+<div class="hint">最新在前 · 页面每 60 秒自动重载</div>
+<div class="timeline">{body}</div>
 {journal_html}
 </main>
 </div></body></html>"""
@@ -181,8 +247,9 @@ def render_site():
         day_events = [r for r in events if day_of(r.get("timestamp", "")) == d]
         (out / "days" / f"{d}.html").write_text(
             page_html(day_events, days, d, journal if d == days[0] else ""))
+    latest = days[0]
     (out / "index.html").write_text(
-        page_html([r for r in events if day_of(r.get("timestamp", "")) == days[0]], days, days[0], journal))
+        page_html([r for r in events if day_of(r.get("timestamp", "")) == latest], days, latest, journal))
     return out
 
 
