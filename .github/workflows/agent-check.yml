@@ -10,7 +10,7 @@ on:
 
 permissions:
   contents: read
-  actions: read
+  actions: write   # 触发 agent-cloud 需要
 
 concurrency:
   group: agent-check
