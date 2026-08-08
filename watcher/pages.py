@@ -9,6 +9,7 @@
 import glob
 import json
 import os
+import re
 import subprocess
 import time
 from datetime import datetime, timezone
@@ -19,6 +20,7 @@ AUDIT = os.path.join(ROOT, "audit")
 os.makedirs(AUDIT, exist_ok=True)
 
 CLOUD = os.environ.get("FAP_CLOUD") == "1"
+ALL_EVENTS = []
 INTERVAL = int(os.environ.get("PAGES_INTERVAL", "60"))
 ONCE = os.environ.get("PAGES_ONCE") == "1"
 # GH_REPO 支持完整 "owner/repo"(云端 env)或仅 repo 名(默认)
@@ -94,14 +96,100 @@ details[open] summary::before{content:"▾ "}
 details div{color:#aab4c8;font-size:13px;margin-top:8px;padding:10px 12px;
 background:var(--panel2);border-left:2px solid var(--border);border-radius:6px;
 white-space:pre-wrap;word-break:break-word}
-.journal{margin-top:34px}
-.journal h3{font-size:14px;color:var(--pi);margin-bottom:10px}
-.journal pre{white-space:pre-wrap;background:var(--panel);border:1px solid var(--border);
-border-radius:10px;padding:16px;font:13px/1.7 ui-monospace,SFMono-Regular,monospace;color:#c9d1d9}
+.journal-page{margin-top:0}
+.journal-page h2{font-size:16px;margin-bottom:14px}
+.md{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:24px 28px;
+line-height:1.75;color:#d5dce8;font-size:14.5px}
+.md h1,.md h2,.md h3,.md h4{color:var(--pi);margin:22px 0 10px;line-height:1.4}
+.md h1{font-size:22px;border-bottom:1px solid var(--border);padding-bottom:8px}
+.md h2{font-size:18px;border-bottom:1px solid var(--border);padding-bottom:6px}
+.md h3{font-size:15.5px}.md h4{font-size:14px;color:var(--text)}
+.md p{margin:10px 0}
+.md ul,.md ol{margin:10px 0 10px 22px}
+.md li{margin:4px 0}
+.md blockquote{margin:12px 0;padding:8px 14px;border-left:3px solid var(--tool);
+background:var(--panel2);border-radius:0 8px 8px 0;color:#b9c3d4}
+.md pre{background:#0a0e16;border:1px solid var(--border);border-radius:8px;padding:14px;
+overflow-x:auto;font:12.5px/1.6 ui-monospace,SFMono-Regular,monospace;margin:12px 0;color:#c9d4e5}
+.md code{background:var(--panel2);border:1px solid var(--border);border-radius:4px;
+padding:1px 6px;font:12.5px ui-monospace,monospace;color:#e3b341}
+.md pre code{background:none;border:none;padding:0;color:inherit}
+.md hr{border:none;border-top:1px solid var(--border);margin:20px 0}
+.md a{color:var(--accent)}
 @media(max-width:800px){.layout{flex-direction:column}aside{width:100%;height:auto;position:static;
 border-right:none;border-bottom:1px solid var(--border)}aside nav{display:flex;flex-wrap:wrap;gap:4px}
 aside nav a{margin:0}main{padding:16px}}
 """
+
+
+def inline_md(s):
+    """行内标记: 行内代码 / 加粗 / 斜体 / 链接"""
+    s = re.sub(r"`([^`]+)`", r"<code>\1</code>", s)
+    s = re.sub(r"\*\*([^*]+)\*\*", r"<b>\1</b>", s)
+    s = re.sub(r"([*_])([^*_]+)\1", r"<i>\2</i>", s)
+    s = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r'<a href="\2">\1</a>', s)
+    return s
+
+
+def render_markdown(text):
+    """零依赖轻量 markdown → HTML(标题/列表/引用/代码块/段落/分隔线)"""
+    lines = text.split("\n")
+    out, i, in_code, code_buf = [], 0, False, []
+    while i < len(lines):
+        line = lines[i]
+        if line.strip().startswith("```"):
+            if in_code:
+                out.append("<pre>" + "".join(code_buf) + "</pre>")
+                code_buf, in_code = [], False
+            else:
+                in_code = True
+            i += 1
+            continue
+        if in_code:
+            code_buf.append(line + "\n")
+            i += 1
+            continue
+        s = line.strip()
+        if not s:
+            i += 1
+            continue
+        m = re.match(r"^(#{1,4})\s+(.*)$", s)
+        if m:
+            out.append(f"<h{len(m.group(1))}>{inline_md(m.group(2))}</h{len(m.group(1))}>")
+            i += 1
+            continue
+        if re.match(r"^[-*]\s+", s):
+            items = []
+            while i < len(lines) and re.match(r"^\s*[-*]\s+", lines[i].strip()):
+                items.append("<li>" + inline_md(lines[i].strip()[2:]) + "</li>")
+                i += 1
+            out.append("<ul>" + "".join(items) + "</ul>")
+            continue
+        if re.match(r"^\d+\.\s+", s):
+            items = []
+            while i < len(lines) and re.match(r"^\d+\.\s+", lines[i].strip()):
+                items.append("<li>" + inline_md(re.sub(r"^\d+\.\s+", "", lines[i].strip())) + "</li>")
+                i += 1
+            out.append("<ol>" + "".join(items) + "</ol>")
+            continue
+        if s.startswith(">"):
+            out.append("<blockquote>" + inline_md(s.lstrip(">").strip()) + "</blockquote>")
+            i += 1
+            continue
+        if re.match(r"^[-*_]{3,}$", s):
+            out.append("<hr>")
+            i += 1
+            continue
+        para = [inline_md(s)]
+        i += 1
+        while i < len(lines) and lines[i].strip() and not re.match(
+                r"^(#{1,4}\s|[-*]\s|\d+\.\s|>|```|[-*_]{3,}$)", lines[i].strip()):
+            para.append(inline_md(lines[i].strip()))
+            i += 1
+        out.append("<p>" + "<br>".join(para) + "</p>")
+    if in_code:
+        out.append("<pre>" + "".join(code_buf) + "</pre>")
+    return "\n".join(out)
 
 
 def agent_exec(args, user="agent", timeout=120):
@@ -212,19 +300,21 @@ def day_of(ts):
     return (ts or "")[:10]
 
 
-def page_html(events, days, current_day, journal):
-    events = sorted(events, key=lambda r: r.get("timestamp") or "", reverse=True)
+def layout(title, days, current_day, body, journal_active=False):
+    """共享骨架: header + 侧栏(日记入口 + 按天归档) + main"""
     nav = []
+    jcls = ' class="active"' if journal_active else ""
+    nav.append(f'<a{jcls} href="journal.html"><span>📓 日记</span><span class="cnt">journal</span></a>')
+    nav.append('<div class="side-title" style="margin-top:14px">按天归档(过程)</div>')
     for d in days:
-        cls = ' class="active"' if d == current_day else ""
+        cls = ' class="active"' if (d == current_day and not journal_active) else ""
         href = "index.html" if d == days[0] else f"days/{d}.html"
-        cnt = sum(1 for r in events if day_of(r.get("timestamp", "")) == d)
+        cnt = sum(1 for r in ALL_EVENTS if day_of(r.get("timestamp", "")) == d)
         nav.append(f'<a{cls} href="{href}"><span>{d}</span><span class="cnt">{cnt}</span></a>')
-    body = "".join(event_html(r) for r in events)
 
     now = datetime.now(timezone.utc)
     updated = now.strftime("%Y-%m-%d %H:%M:%S UTC")
-    last_ts = max((r.get("timestamp", "") for r in events), default="")
+    last_ts = max((r.get("timestamp", "") for r in ALL_EVENTS), default="")
     chip = ""
     try:
         last_dt = datetime.fromisoformat(last_ts.replace("Z", "+00:00"))
@@ -238,14 +328,10 @@ def page_html(events, days, current_day, journal):
     except Exception:
         chip = '<span class="chip">状态未知</span>'
 
-    journal_html = ""
-    if journal.strip():
-        journal_html = (f'<div class="journal"><h3>📓 journal.md · agent 自写心得</h3>'
-                        f'<pre>{esc(journal)}</pre></div>')
     return f"""<!doctype html>
 <html lang="zh"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>free agent playground · {current_day}</title>
+<title>free agent playground · {title}</title>
 <style>{CSS}</style>
 <meta http-equiv="refresh" content="60">
 </head><body>
@@ -261,17 +347,29 @@ def page_html(events, days, current_day, journal):
 </header>
 <div class="layout">
 <aside>
-<div class="side-title">按天归档</div>
 <nav>{''.join(nav)}</nav>
-<div class="foot">每 60 秒自动刷新<br>事件新→旧排列<br>思考/工具调用可折叠</div>
+<div class="foot">每 60 秒自动刷新<br>过程新→旧 · 日记即 journal.md</div>
 </aside>
 <main>
-<h2>{current_day} <span class="cnt">{len(events)} 条事件</span></h2>
-<div class="hint">最新在前 · 页面每 60 秒自动重载</div>
-<div class="timeline">{body}</div>
-{journal_html}
+{body}
 </main>
 </div></body></html>"""
+
+
+def events_body(events, current_day):
+    events = sorted(events, key=lambda r: r.get("timestamp") or "", reverse=True)
+    body = "".join(event_html(r) for r in events)
+    return (f"<h2>{current_day} <span class='cnt'>{len(events)} 条事件</span></h2>"
+            f"<div class='hint'>最新在前 · 页面每 60 秒自动重载</div>"
+            f"<div class='timeline'>{body}</div>")
+
+
+def journal_body(journal):
+    md = render_markdown(journal) if journal.strip() else "<p>日记还是空的。</p>"
+    return f"""<div class="journal-page">
+<h2>📓 日记 <span class="cnt">journal.md · agent 自写</span></h2>
+<div class="md">{md}</div>
+</div>"""
 
 
 def ensure_repo():
@@ -289,8 +387,10 @@ def ensure_repo():
 
 def render_site():
     ensure_repo()
+    global ALL_EVENTS
     _, events = pull_latest_session()
     journal = pull_file("/workspace/journal.md")
+    ALL_EVENTS = events
     days = sorted({day_of(r.get("timestamp", "")) for r in events if r.get("timestamp")}, reverse=True)
     if not days:
         return None
@@ -300,10 +400,12 @@ def render_site():
     for d in days:
         day_events = [r for r in events if day_of(r.get("timestamp", "")) == d]
         (out / "days" / f"{d}.html").write_text(
-            page_html(day_events, days, d, journal if d == days[0] else ""))
+            layout(d, days, d, events_body(day_events, d)))
     latest = days[0]
     (out / "index.html").write_text(
-        page_html([r for r in events if day_of(r.get("timestamp", "")) == latest], days, latest, journal))
+        layout(latest, days, latest, events_body([r for r in events if day_of(r.get("timestamp", "")) == latest], latest)))
+    (out / "journal.html").write_text(
+        layout("日记", days, latest, journal_body(journal), journal_active=True))
     return out
 
 
