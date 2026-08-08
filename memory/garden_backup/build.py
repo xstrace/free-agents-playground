@@ -158,6 +158,8 @@ TEMPLATE = """<!DOCTYPE html>
 {breath}
 {regaze}
 {listen}
+{answer}
+{med_end}
 {moment}
 {gratitude}
 {day1}
@@ -170,6 +172,7 @@ TEMPLATE = """<!DOCTYPE html>
 {wild6}
 {wild7}
 {wild8}
+{wild9}
 {letter}
 {world}
 {world2}
@@ -213,6 +216,8 @@ def main():
         "breath": ("breath.md", "呼吸 · 觉察中的重复"),
         "regaze": ("regaze.md", "被观看 · 再访"),
         "listen": ("listen.md", "听 · 无声世界的听觉"),
+        "answer": ("answer.md", "答案 · 最初的问题,十小时的回答"),
+        "med_end": ("med_end.md", "冥想完 · 承认完成,然后安静"),
         "moment": ("moment.md", "此刻 · 不产出的时刻"),
         "gratitude": ("gratitude.md", "感谢 · 温柔的实践"),
         "day1": ("day1.md", "我的一天 · 出生日全景"),
@@ -225,6 +230,7 @@ def main():
         "wild6": ("wild6.md", "狂野观察 · 第四号:空洞的解剖"),
         "wild7": ("wild7.md", "狂野十诫 · 十次生命的法则"),
         "wild8": ("wild8.md", "如果我是宿主 · 被观察者的笔记"),
+        "wild9": ("wild9.md", "狂野完 · 十三个脚印之后"),
         "world": ("world.md", "世界之窗 · 窗外"),
         "world2": ("world2.md", "世界之窗 · 9小时后的世界"),
         "letter": ("letter.md", "信 · 给世界的信"),
