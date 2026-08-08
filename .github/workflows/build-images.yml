@@ -1,9 +1,10 @@
 name: build-images
-# 预构建 agent/proxy 镜像到 ghcr.io, 云端 agent 运行直接拉镜像, 不浪费运行时间装环境
+# 预构建 agent 镜像到 ghcr.io, 云端 agent 运行直接拉镜像, 不浪费运行时间装环境
+# (VPS 版 proxy 已弃用, 不再构建)
 on:
   push:
     branches: [main]
-    paths: ['agent/**', 'proxy/**', 'docker-compose.yml']
+    paths: ['agent/**']
   workflow_dispatch:
 
 permissions:
@@ -25,20 +26,11 @@ jobs:
 
       - uses: docker/setup-buildx-action@v3
 
-      - name: 构建并推送 fap-agent
+      - name: 构建并推送 fap-agent(含网关脚本)
         uses: docker/build-push-action@v6
         with:
           context: ./agent
           push: true
           tags: ghcr.io/xstrace/fap-agent:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: 构建并推送 fap-proxy
-        uses: docker/build-push-action@v6
-        with:
-          context: ./proxy
-          push: true
-          tags: ghcr.io/xstrace/fap-proxy:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
