@@ -4,6 +4,7 @@ name: agent-cloud
 #   - 下一班启动时拉回 → pi -c 无缝续命(上下文不丢)
 #   - 镜像从 ghcr 拉(由 build-images 预构建), 引导时间 ~1 分钟, 其余全给 agent
 #   - 何时开下一班由 agent-check.yml 决定(每 15 分钟查岗: 上一班跑完才开, 没跑完就跳过)
+#   - 每班结束渲染推送 GitHub Pages(站点由云端接管)
 on:
   workflow_dispatch:
     inputs:
@@ -25,6 +26,7 @@ jobs:
     timeout-minutes: 360
     env:
       BUDGET_MIN: ${{ inputs.budget_min || vars.BUDGET_MIN || '55' }}
+      OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
     steps:
       - uses: actions/checkout@v4
 
@@ -56,7 +58,7 @@ jobs:
           #!/bin/bash
           docker rm -f fap-agent 2>/dev/null
           docker run -d --name fap-agent \
-            --cpus 1 --memory 1g --memory-swap 1g --pids-limit 128 \
+            --cpus 1 --memory 1g --memory-swap 1g --pids-limit 512 \
             --cap-drop ALL --cap-add SETUID --cap-add SETGID --cap-add CHOWN \
             --security-opt no-new-privileges \
             --read-only \
@@ -99,3 +101,9 @@ jobs:
               commit -q -m "state: $(date -u +%FT%TZ)" 2>/dev/null || true
           git push -q -u origin agent-data 2>&1 | tail -1 || true
           echo "会话已存档(agent-data)"
+
+      - name: 渲染并推送 GitHub Pages(云端会话流)
+        if: always()
+        run: |
+          PAGES_ONCE=1 PAGES_LOCAL_WS="$PWD/data/workspace" \
+            python3 watcher/pages.py 2>&1 | tail -3
