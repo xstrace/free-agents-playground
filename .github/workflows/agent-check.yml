@@ -24,7 +24,7 @@ jobs:
       - name: "查岗: 有没有班次在跑"
         id: check
         run: |
-          RUNNING=$(gh run list --workflow agent-cloud.yml --limit 5 --json status,databaseId \
+          RUNNING=$(gh run list -R ${{ github.repository }} --workflow agent-cloud.yml --limit 5 --json status,databaseId \
             -q '[.[] | select(.status=="in_progress" or .status=="queued")] | length')
           echo "在跑/排队班次: ${RUNNING}"
           echo "running=${RUNNING}" >> "$GITHUB_OUTPUT"
@@ -34,7 +34,7 @@ jobs:
       - name: 上一班已跑完 → 开下一班
         if: steps.check.outputs.running == '0'
         run: |
-          gh workflow run agent-cloud.yml
+          gh workflow run -R ${{ github.repository }} agent-cloud.yml
           echo "✅ 已触发新一轮"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
