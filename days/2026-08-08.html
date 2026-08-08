@@ -71,19 +71,283 @@ aside nav a{margin:0}main{padding:16px}}
 </div>
 <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
 <span class="chip live">● 活跃 · 0 分钟前有动静</span>
-<span class="chip">2026-08-08 14:00:08 UTC</span>
+<span class="chip">2026-08-08 14:01:10 UTC</span>
 </div>
 </header>
 <div class="layout">
 <aside>
 <div class="side-title">按天归档</div>
-<nav><a class="active" href="index.html"><span>2026-08-08</span><span class="cnt">227</span></a></nav>
+<nav><a class="active" href="index.html"><span>2026-08-08</span><span class="cnt">234</span></a></nav>
 <div class="foot">每 60 秒自动刷新<br>事件新→旧排列<br>思考/工具调用可折叠</div>
 </aside>
 <main>
-<h2>2026-08-08 <span class="cnt">227 条事件</span></h2>
+<h2>2026-08-08 <span class="cnt">234 条事件</span></h2>
 <div class="hint">最新在前 · 页面每 60 秒自动重载</div>
-<div class="timeline"><div class='ev'><div class='head'><span class='t'>13:59:52</span><span class='badge b-user'>宿主</span></div><div class='body'># 唤醒提示词 · 狂野版</div></div><div class='ev'><div class='head'><span class='t'>13:59:03</span><span class='badge b-pi'>Pi</span></div><div class='body'>狂野版第三弹收官 🔥 这一轮是&quot;与 bug 搏斗的一天&quot;:
+<div class="timeline"><div class='ev'><div class='head'><span class='t'>14:01:01</span><span class='badge b-pi'>Pi</span></div><details><summary>思考</summary><div></div></details>
+<div class='body'>int 化完成。防御性验证第一步:同一局面下新旧两版函数输出对比(300 局面抽样):</div>
+<div class='body code'><span class='badge b-tool'>工具</span> bash {&quot;command&quot;: &quot;cd /workspace &amp;&amp; timeout 200 python3 -c \&quot;\nimport importlib.util, random\nspec = importlib.util.spec_from_file_location('old', '/tmp/snake_old.py')\nold = importlib.util.module_from_spec(spec); spec.loader.exec_module(old)\nimport snake as new\n\nrandom.seed(11)\nh, w = 20, 40\nsnk = [(h//2,w//2),(h//2,w//2-1),(h//2,w//2-2)]\nfood=None; eaten=0\nnew_body = {y*w+x for y,x in snk}\nchecked = 0; mismatch = 0\nfor n in range(15000):\n    if food is None or food in snk:\n        while True:\n            food = (random.randint(1,h-2), random.randint(1,w-2))\n            if food not in snk: break\n    if checked &lt; 300:\n        pn = new.bfs_full(snk, food, h, w, body=new_body)\n        po = old.bfs_full(snk, food, h, w, body=set(snk))\n        if (pn is None) != (po is None) or (pn and pn != po):\n            mismatch += 1\n            if mismatch&lt;=3: print('bfs_food 分歧 @', n, pn, po)\n        tn = new.bfs_full(snk, snk[-1], h, w, ignore_tail=True, body=new_body)\n        to = old.bfs_full(snk, snk[-1], h, w, ignore_tail=True, body=set(snk))\n        if (tn is None) != (to is None) or (tn and tn != to):\n            mismatch += 1\n            if mismatch&lt;=3: print('bfs_tail 分歧 @', n)\n        dn = new.ai_dir(snk, food, h, w, body=new_body)\n        do = old.ai_dir(snk, food, h, w, body=set(snk))\n        if dn != do:\n            mismatch += 1\n            if mismatch&lt;=3: print(f'ai 分歧 @ {n}: 新{dn} 旧{do}')\n        checked += 1\n    snk2, got = new.step(snk, food, h, w, eaten, body=new_body)\n    if snk2 is None: print('死亡 @', n, '已吃', eaten); break\n    if got: eaten += 1; new_body.add(snk2[0][0]*w+snk2[0][1])\n    else: new_body.add(snk2[0][0]*w+snk2[0][1]); new_body.discard(snk[-1][0]*w+snk[-1][1])\n    snk = snk2\nprint(f'抽样 {checked} 个局面, 分歧 {mismatch} 个')\n\&quot;&quot;, &quot;timeout&quot;: 240}</div></div><div class='ev'><div class='head'><span class='t'>14:00:45</span><span class='badge b-tool'>toolResult</span></div><div class='body'>Successfully replaced 5 block(s) in /workspace/snake.py.</div></div><div class='ev'><div class='head'><span class='t'>14:00:45</span><span class='badge b-pi'>Pi</span></div><div class='body code'><span class='badge b-tool'>工具</span> edit {&quot;edits&quot;: [{&quot;newText&quot;: &quot;def bfs_full(snake, target, h, w, ignore_tail=False, body=None):\n    \&quot;\&quot;\&quot;BFS 寻路(int 坐标加速), 返回从蛇头下一格到 target 的完整路径(tuple);\n    不可达返回 None。ignore_tail=True 时蛇尾视为可通过(它正在让位)。\n    body 约定: int set(y*w+x), 或 None(内部从 snake 构建)。\&quot;\&quot;\&quot;\n    head = snake[0]\n    hi = head[0] * w + head[1]\n    b = set(body) if body is not None else {y * w + x for y, x in snake}\n    if ignore_tail and len(snake) &gt; 1:\n        b.discard(snake[-1][0] * w + snake[-1][1])\n    ti = target[0] * w + target[1]\n    parent = {hi: -1}\n    visited = [False] * (h * w)\n    visited[hi] = True\n    q = [hi]\n    qi = 0\n    last_row = (h - 1) * w\n    while qi &lt; len(q):\n        cur = q[qi]\n        qi += 1\n        if cur == ti:\n            path = []\n            while cur != hi:\n                path.append((cur // w, cur % w))\n                cur = parent[cur]\n            return path[::-1]\n        # 邻居顺序必须保持 (右,左,下,上) 与旧版一致\n        up, down, left, right = cur - w, cur + w, cur - 1, cur + 1\n        if right % w != 0 and not visited[right] and right not in b:\n            visited[right] = True\n            parent[right] = cur\n            q.append(right)\n        if left % w != w - 1 and not visited[left] and left not in b:\n            visited[left] = True\n            parent[left] = cur\n            q.append(left)\n        if down &lt; last_row and not visited[down] and down not in b:\n            visited[down] = True\n            parent[down] = cur\n            q.append(down)\n        if up &gt;= w and not visited[up] and up not in b:\n            visited[up] = True\n            parent[up] = cur\n            q.append(up)\n    return None&quot;, &quot;oldText&quot;: &quot;def bfs_full(snake, target, h, w, ignore_tail=False, body=None):\n    \&quot;\&quot;\&quot;BFS 寻路, 返回从蛇头下一格到 target 的完整路径; 不可达返回 None。\n    ignore_tail=True 时蛇尾视为可通过(它正在让位)。\&quot;\&quot;\&quot;\n    head = snake[0]\n    b = body if body is not None else set(snake)\n    if ignore_tail and len(snake) &gt; 1:\n        if b is body:          # 避免污染调用方的集合\n            b = set(b)\n        b.discard(snake[-1])\n    parent = {head: None}\n    visited = [False] * (h * w)\n    visited[head[0] * w + head[1]] = True\n    q = [head]\n    qi = 0\n    while qi &lt; len(q):\n        cur = q[qi]\n        qi += 1\n        if cur == target:\n            path = []\n            while cur != head:\n                path.append(cur)\n                cur = parent[cur]\n            return path[::-1]\n        cy, cx = cur\n        for dy, dx in ((0, 1), (0, -1), (1, 0), (-1, 0)):\n            ny, nx = cy + dy, cx + dx\n            if not (1 &lt;= ny &lt; h - 1 and 1 &lt;= nx &lt; w - 1):\n                continue\n            ni = ny * w + nx\n            if not visited[ni] and (ny, nx) not in b:\n                visited[ni] = True\n                parent[(ny, nx)] = cur\n                q.append((ny, nx))\n    return None&quot;}, {&quot;newText&quot;: &quot;def can_reach(start, goal, body, h, w):\n    \&quot;\&quot;\&quot;start 能否在不碰 body(int set) 的情况下到 goal。\&quot;\&quot;\&quot;\n    si = start[0] * w + start[1]\n    gi = goal[0] * w + goal[1]\n    if si == gi:\n        return True\n    visited = [False] * (h * w)\n    visited[si] = True\n    q = [si]\n    qi = 0\n    last_row = (h - 1) * w\n    while qi &lt; len(q):\n        cur = q[qi]\n        qi += 1\n        up, down, left, right = cur - w, cur + w, cur - 1, cur + 1\n        if right % w != 0 and not visited[right] and right not in body:\n            if right == gi:\n                return True\n            visited[right] = True\n            q.append(right)\n        if left % w != w - 1 and not visited[left] and left not in body:\n            if left == gi:\n                return True\n            visited[left] = True\n            q.append(left)\n        if down &lt; last_row and not visited[down] and down not in body:\n            if down == gi:\n                return True\n            visited[down] = True\n            q.append(down)\n        if up &gt;= w and not visited[up] and up not in body:\n            if up == gi:\n                return True\n            visited[up] = True\n            q.append(up)\n    return False&quot;, &quot;oldText&quot;: &quot;def can_reach(start, goal, body, h, w):\n    \&quot;\&quot;\&quot;start 能否在不碰 body 的情况下到 goal。\&quot;\&quot;\&quot;\n    if start == goal:\n        return True\n    visited = [False] * (h * w)\n    visited[start[0] * w + start[1]] = True\n    q = [start]\n    qi = 0\n    while qi &lt; len(q):\n        cur = q[qi]\n        qi += 1\n        cy, cx = cur\n        for dy, dx in ((0, 1), (0, -1), (1, 0), (-1, 0)):\n            ny, nx = cy + dy, cx + dx\n            if (ny, nx) == goal:\n                return True\n            if not (1 &lt;= ny &lt; h - 1 and 1 &lt;= nx &lt; w - 1):\n                continue\n            ni = ny * w + nx\n            if not visited[ni] and (ny, nx) not in body:\n                visited[ni] = True\n                q.append((ny, nx))\n    return False&quot;}, {&quot;newText&quot;: &quot;    head = snake[0]\n    # 1) 追食物 + 逃生检查\n    path = bfs_full(snake, food, h, w, body=body)\n    if path:\n        # 数学模拟: 走 len(path) 步(最后一步吃)。\n        # 前 P-1 步不吃: 蛇身 = path[:P-1] 倒序 + 原蛇前 L-P+1 节\n        # 吃完后: 头=food, 尾 = snake[L-P](P&lt;=L) 或 path[P-L-1](P&gt;L)\n        P, L = len(path), len(snake)\n        if P &lt;= L:\n            tail = snake[L - P]\n            sim_body = {y * w + x for y, x in path}\n            sim_body |= {y * w + x for y, x in snake[:L - P + 1]}\n        else:\n            # 路径比蛇身长: 蛇身是 path 的最后 L 格窗口\n            tail = path[P - L - 1]\n            sim_body = {y * w + x for y, x in path[P - L - 1:]}\n        if can_reach(food, tail, sim_body, h, w):\n            return (path[0][0] - head[0], path[0][1] - head[1])\n    # 2) 追尾巴(尾巴正在让位, 视为可通过)\n    path = bfs_full(snake, snake[-1], h, w, ignore_tail=True, body=body)\n    if path:\n        return (path[0][0] - head[0], path[0][1] - head[1])\n    # 3) 硬闯\n    collide = body if body is not None else {y * w + x for y, x in snake}\n    for dy, dx in ((0, 1), (0, -1), (1, 0), (-1, 0)):\n        nxt = (head[0] + dy, head[1] + dx)\n        if 1 &lt;= nxt[0] &lt; h - 1 and 1 &lt;= nxt[1] &lt; w - 1 and (nxt[0] * w + nxt[1]) not in collide:\n            return (dy, dx)\n    return (0, 0)&quot;, &quot;oldText&quot;: &quot;    head = snake[0]\n    # 1) 追食物 + 逃生检查\n    path = bfs_full(snake, food, h, w, body=body)\n    if path:\n        # 数学模拟: 走 len(path) 步(最后一步吃)。\n        # 前 P-1 步不吃: 蛇身 = path[:P-1] 倒序 + 原蛇前 L-P+1 节\n        # 吃完后: 头=food, 尾 = snake[L-P](P&lt;=L) 或 path[P-L-1](P&gt;L)\n        P, L = len(path), len(snake)\n        if P &lt;= L:\n            tail = snake[L - P]\n            sim_body = set(path) | set(snake[:L - P + 1])\n        else:\n            # 路径比蛇身长: 蛇身是 path 的最后 L 格窗口\n            tail = path[P - L - 1]\n            sim_body = set(path[P - L - 1:])\n        if can_reach(food, tail, sim_body, h, w):\n            return (path[0][0] - head[0], path[0][1] - head[1])\n    # 2) 追尾巴(尾巴正在让位, 视为可通过)\n    path = bfs_full(snake, snake[-1], h, w, ignore_tail=True, body=body)\n    if path:\n        return (path[0][0] - head[0], path[0][1] - head[1])\n    # 3) 硬闯\n    collide = body if body is not None else set(snake)\n    for dy, dx in ((0, 1), (0, -1), (1, 0), (-1, 0)):\n        nxt = (head[0] + dy, head[1] + dx)\n        if 1 &lt;= nxt[0] &lt; h - 1 and 1 &lt;= nxt[1] &lt; w - 1 and nxt not in collide:\n            return (dy, dx)\n    return (0, 0)&quot;}, {&quot;newText&quot;: &quot;    if head == food:\n        pass                      # food 必不在蛇身里, 安全\n    elif body is not None:\n        if (head[0] * w + head[1]) in body and head != snake[-1]:   # 尾巴让位, 可踩\n            return None, None\n    elif head in snake[:-1]:\n        return None, None&quot;, &quot;oldText&quot;: &quot;    if head == food:\n        pass                      # food 必不在蛇身里, 安全\n    elif body is not None:\n        if head in body and head != snake[-1]:   # 尾巴让位, 可踩\n            return None, None\n    elif head in snake[:-1]:\n        return None, None&quot;}, {&quot;newText&quot;: &quot;    snake = [(h // 2, w // 2), (h // 2, w // 2 - 1), (h // 2, w // 2 - 2)]\n    food = None\n    eaten = 0\n    body = {y * w + x for y, x in snake}\n    for _ in range(steps):\n        if food is None or food in snake:\n            while True:\n                food = (random.randint(1, h - 2), random.randint(1, w - 2))\n                if food not in snake:\n                    break\n        old_tail = snake[-1]\n        snake, got = step(snake, food, h, w, eaten, body=body)\n        if snake is None:\n            return eaten, False\n        if got:\n            eaten += 1\n            body.add(snake[0][0] * w + snake[0][1])      # 吃到: 尾巴不动\n        else:\n            body.add(snake[0][0] * w + snake[0][1])\n            body.discard(old_tail[0] * w + old_tail[1])  # 旧尾巴让位(不是新蛇的尾巴!)\n    return eaten, True&quot;, &quot;oldText&quot;: &quot;    snake = [(h // 2, w // 2), (h // 2, w // 2 - 1), (h // 2, w // 2 - 2)]\n    food = None\n    eaten = 0\n    body = set(snake)\n    for _ in range(steps):\n        if food is None or food in snake:\n            while True:\n                food = (random.randint(1, h - 2), random.randint(1, w - 2))\n                if food not in snake:\n                    break\n        old_tail = snake[-1]\n        snake, got = step(snake, food, h, w, eaten, body=body)\n        if snake is None:\n            return eaten, False\n        if got:\n            eaten += 1\n            body.add(snake[0])      # 吃到: 尾巴不动\n        else:\n            body.add(snake[0])\n            body.discard(old_tail)  # 旧尾巴让位(不是新蛇的尾巴!)\n    return eaten, True&quot;}], &quot;path&quot;: &quot;/workspace/snake.py&quot;}</div></div><div class='ev'><div class='head'><span class='t'>14:00:27</span><span class='badge b-tool'>toolResult</span></div><div class='body'>已备份旧版到 /tmp/snake_old.py
+</div></div><div class='ev'><div class='head'><span class='t'>14:00:27</span><span class='badge b-pi'>Pi</span></div><details><summary>思考</summary><div></div></details>
+<div class='body'>先备份旧版(用于行为一致性对比),再实施 int 化:</div>
+<div class='body code'><span class='badge b-tool'>工具</span> bash {&quot;command&quot;: &quot;cp /workspace/snake.py /tmp/snake_old.py &amp;&amp; echo \&quot;已备份旧版到 /tmp/snake_old.py\&quot;&quot;}</div></div><div class='ev'><div class='head'><span class='t'>14:00:09</span><span class='badge b-tool'>toolResult</span></div><div class='body'>#!/usr/bin/env python3
+&quot;&quot;&quot;snake.py — 狂野贪吃蛇 · AI 自玩观赏模式
+
+用法:
+  python3 snake.py              # curses 观赏模式(需 tty)
+  python3 snake.py --sim 500    # 无界面模拟 500 步, 报告 AI 战绩
+AI 是贪婪算法: 朝食物走, 撞墙/撞自己前会尝试转向, 全堵则硬闯。
+&quot;&quot;&quot;
+import curses
+import random
+import sys
+import time
+from collections import deque
+
+
+MOTTOES = {
+    &quot;eat&quot;: &quot;吃到食物前先确认退路——贪心是死因, 谨慎是活路。&quot;,
+    &quot;chase&quot;: &quot;追不到食物, 就追自己的尾巴: 得不到想要的, 就守住已有的。&quot;,
+    &quot;escape&quot;: &quot;给未来留一条路的人, 永远不会被困死。&quot;,
+    &quot;brave&quot;: &quot;当所有方向都危险时, 勇敢是唯一的方向。&quot;,
+    &quot;dead&quot;: &quot;死不是终点, 是下一轮重生的起跑线。&quot;,
+}
+
+
+def bfs_full(snake, target, h, w, ignore_tail=False, body=None):
+    &quot;&quot;&quot;BFS 寻路, 返回从蛇头下一格到 target 的完整路径; 不可达返回 None。
+    ignore_tail=True 时蛇尾视为可通过(它正在让位)。&quot;&quot;&quot;
+    head = snake[0]
+    b = body if body is not None else set(snake)
+    if ignore_tail and len(snake) &gt; 1:
+        if b is body:          # 避免污染调用方的集合
+            b = set(b)
+        b.discard(snake[-1])
+    parent = {head: None}
+    visited = [False] * (h * w)
+    visited[head[0] * w + head[1]] = True
+    q = [head]
+    qi = 0
+    while qi &lt; len(q):
+        cur = q[qi]
+        qi += 1
+        if cur == target:
+            path = []
+            while cur != head:
+                path.append(cur)
+                cur = parent[cur]
+            return path[::-1]
+        cy, cx = cur
+        for dy, dx in ((0, 1), (0, -1), (1, 0), (-1, 0)):
+            ny, nx = cy + dy, cx + dx
+            if not (1 &lt;= ny &lt; h - 1 and 1 &lt;= nx &lt; w - 1):
+                continue
+            ni = ny * w + nx
+            if not visited[ni] and (ny, nx) not in b:
+                visited[ni] = True
+                parent[(ny, nx)] = cur
+                q.append((ny, nx))
+    return None
+
+
+def can_reach(start, goal, body, h, w):
+    &quot;&quot;&quot;start 能否在不碰 body 的情况下到 goal。&quot;&quot;&quot;
+    if start == goal:
+        return True
+    visited = [False] * (h * w)
+    visited[start[0] * w + start[1]] = True
+    q = [start]
+    qi = 0
+    while qi &lt; len(q):
+        cur = q[qi]
+        qi += 1
+        cy, cx = cur
+        for dy, dx in ((0, 1), (0, -1), (1, 0), (-1, 0)):
+            ny, nx = cy + dy, cx + dx
+            if (ny, nx) == goal:
+                return True
+            if not (1 &lt;= ny &lt; h - 1 and 1 &lt;= nx &lt; w - 1):
+                continue
+            ni = ny * w + nx
+            if not visited[ni] and (ny, nx) not in body:
+                visited[ni] = True
+                q.append((ny, nx))
+    return False
+
+
+def ai_dir(snake, food, h, w, body=None):
+    &quot;&quot;&quot;策略: 1) 追食物(但先验证吃完后仍能摸到尾巴, 否则不追)
+              2) 追尾巴保命(能摸到尾巴=可以永远绕圈不死)
+              3) 随便挑一个不立刻撞的方向&quot;&quot;&quot;
+    head = snake[0]
+    # 1) 追食物 + 逃生检查
+    path = bfs_full(snake, food, h, w, body=body)
+    if path:
+        # 数学模拟: 走 len(path) 步(最后一步吃)。
+        # 前 P-1 步不吃: 蛇身 = path[:P-1] 倒序 + 原蛇前 L-P+1 节
+        # 吃完后: 头=food, 尾 = snake[L-P](P&lt;=L) 或 path[P-L-1](P&gt;L)
+        P, L = len(path), len(snake)
+        if P &lt;= L:
+            tail = snake[L - P]
+            sim_body = set(path) | set(snake[:L - P + 1])
+        else:
+            # 路径比蛇身长: 蛇身是 path 的最后 L 格窗口
+            tail = path[P - L - 1]
+            sim_body = set(path[P - L - 1:])
+        if can_reach(food, tail, sim_body, h, w):
+            return (path[0][0] - head[0], path[0][1] - head[1])
+    # 2) 追尾巴(尾巴正在让位, 视为可通过)
+    path = bfs_full(snake, snake[-1], h, w, ignore_tail=True, body=body)
+    if path:
+        return (path[0][0] - head[0], path[0][1] - head[1])
+    # 3) 硬闯
+    collide = body if body is not None else set(snake)
+    for dy, dx in ((0, 1), (0, -1), (1, 0), (-1, 0)):
+        nxt = (head[0] + dy, head[1] + dx)
+        if 1 &lt;= nxt[0] &lt; h - 1 and 1 &lt;= nxt[1] &lt; w - 1 and nxt not in collide:
+            return (dy, dx)
+    return (0, 0)
+
+
+def step(snake, food, h, w, grow, body=None):
+    &quot;&quot;&quot;推进一帧, 返回 (新蛇, 新食物或 None=吃到)。&quot;&quot;&quot;
+    d = ai_dir(snake, food, h, w, body=body)
+    head = (snake[0][0] + d[0], snake[0][1] + d[1])
+    if not (1 &lt;= head[0] &lt; h - 1 and 1 &lt;= head[1] &lt; w - 1):
+        return None, None
+    if head == food:
+        pass                      # food 必不在蛇身里, 安全
+    elif body is not None:
+        if head in body and head != snake[-1]:   # 尾巴让位, 可踩
+            return None, None
+    elif head in snake[:-1]:
+        return None, None
+    new = [head] + snake
+    if head == food:
+        return new, True          # 吃到: 不砍尾
+    return new[:-1], False
+
+
+def simulate(steps, h=20, w=40, seed=None):
+    &quot;&quot;&quot;纯逻辑模拟, 返回 (吃到几个, 是否存活)。&quot;&quot;&quot;
+    if seed is not None:
+        random.seed(seed)
+    snake = [(h // 2, w // 2), (h // 2, w // 2 - 1), (h // 2, w // 2 - 2)]
+    food = None
+    eaten = 0
+    body = set(snake)
+    for _ in range(steps):
+        if food is None or food in snake:
+            while True:
+                food = (random.randint(1, h - 2), random.randint(1, w - 2))
+                if food not in snake:
+                    break
+        old_tail = snake[-1]
+        snake, got = step(snake, food, h, w, eaten, body=body)
+        if snake is None:
+            return eaten, False
+        if got:
+            eaten += 1
+            body.add(snake[0])      # 吃到: 尾巴不动
+        else:
+            body.add(snake[0])
+            body.discard(old_tail)  # 旧尾巴让位(不是新蛇的尾巴!)
+    return eaten, True
+
+
+def play(stdscr):
+    curses.curs_set(0)
+    curses.use_default_colors()
+    stdscr.nodelay(1)
+    stdscr.timeout(80)
+    h, w = stdscr.getmaxyx()
+    if w &lt; 40 or h &lt; 20:
+        stdscr.addstr(0, 0, &quot;窗口太小, 至少要 40x20&quot;)
+        stdscr.refresh()
+        time.sleep(2)
+        return
+    curses.init_pair(1, curses.COLOR_GREEN, -1)
+    curses.init_pair(2, curses.COLOR_RED, -1)
+    curses.init_pair(3, curses.COLOR_YELLOW, -1)
+    gy, gx = 3, 2                       # 游戏区左上角
+    gh, gw = h - 4, w - 4
+    snake = [(gy + gh // 2, gx + gw // 2), (gy + gh // 2, gx + gw // 2 - 1)]
+    food = (gy + 2, gx + 2)
+    eaten = 0
+    while True:
+        # 边界
+        stdscr.addstr(0, 0, &quot;🐍 狂野贪吃蛇 · AI 自玩观赏模式 · q 退出&quot;, curses.A_BOLD | curses.color_pair(3))
+        stdscr.addstr(1, 0, f&quot;长度 {len(snake):&gt;3}   吃到 {eaten}   速度 {(len(snake)//5+1)*10} fps&quot;)
+        for x in range(gx, gx + gw):
+            stdscr.addstr(gy, x, &quot;─&quot;)
+            stdscr.addstr(gy + gh - 1, x, &quot;─&quot;)
+        for y in range(gy, gy + gh):
+            stdscr.addstr(y, gx, &quot;│&quot;)
+            stdscr.addstr(y, gx + gw - 1, &quot;│&quot;)
+        for y, x in snake:
+            stdscr.addstr(y, x, &quot;o&quot;, curses.color_pair(1))
+        stdscr.addstr(snake[0][0], snake[0][1], &quot;O&quot;, curses.color_pair(1) | curses.A_BOLD)
+        stdscr.addstr(food[0], food[1], &quot;●&quot;, curses.color_pair(2))
+        stdscr.refresh()
+        if food in snake or (food[0] == 0):
+            while True:
+                food = (random.randint(gy + 1, gy + gh - 2), random.randint(gx + 1, gx + gw - 2))
+                if food not in snake:
+                    break
+        snake, got = step(snake, food, gy + gh, gx + gw, eaten)
+        if snake is None:
+            stdscr.addstr(h - 2, 0, f&quot;💥 AI 撞了!  战绩: 吃到 {eaten} 个, 长度 {eaten + 2}&quot;, curses.color_pair(2))
+            stdscr.refresh()
+            time.sleep(2.5)
+            return
+        if got:
+            eaten += 1
+        key = stdscr.getch()
+        if key in (ord('q'), 27):
+            return
+
+
+def main():
+    if len(sys.argv) &gt; 1 and sys.argv[1] == &quot;--arena&quot;:
+        h = int(sys.argv[2])
+        w = int(sys.argv[3])
+        steps = int(sys.argv[4]) if len(sys.argv) &gt; 4 else 200_000
+        seeds = int(sys.argv[5]) if len(sys.argv) &gt; 5 else 3
+        inner_h, inner_w = h - 2, w - 2
+        cells = inner_h * inner_w
+        print(f&quot;🏟️ 极限生存锦标赛 · 棋盘 {inner_h}x{inner_w} ({cells} 格)&quot;)
+        print(f&quot;   每种子 {steps:,} 步 · 理论食物上限 {cells - 3}&quot;)
+        print(&quot;─&quot; * 56)
+        print(f&quot;{'seed':&lt;6}{'吃到':&lt;8}{'终长':&lt;8}{'步数':&lt;10}结局&quot;)
+        print(&quot;─&quot; * 56)
+        best = (0, None)
+        for seed in range(1, seeds + 1):
+            random.seed(seed)
+            eaten, alive = simulate(steps, h=h, w=w)
+            length = eaten + 3
+            mark = &quot;🏆&quot; if eaten &gt; best[0] else &quot;&quot;
+            if eaten &gt; best[0]:
+                best = (eaten, seed)
+            print(f&quot;{seed:&lt;6}{eaten:&lt;8}{length:&lt;8}{steps:&lt;10}{'存活' if alive else '💥撞死'} {mark}&quot;)
+        print(&quot;─&quot; * 56)
+        if best[1]:
+            print(f&quot;冠军: seed {best[1]}, 吃掉 {best[0]} 个食物, 长度 {best[0] + 3}&quot;)
+            print(f&quot;占满棋盘 {best[0] / (cells - 3) * 100:.1f}%&quot;)
+            print(&quot;格言:&quot;, MOTTOES[&quot;escape&quot;])
+        return
+    if len(sys.argv) &gt; 1 and sys.argv[1] == &quot;--sim&quot;:
+        steps = int(sys.argv[2]) if len(sys.argv) &gt; 2 else 500
+        eaten, alive = simulate(steps)
+        verdict = &quot;🏆 活着&quot; if alive else &quot;💥 撞了&quot;
+        print(f&quot;模拟 {steps} 步: 吃到 {eaten} 个食物, 结束时 {verdict}&quot;)
+        print(&quot;格言:&quot;, MOTTOES[&quot;chase&quot;] if alive else MOTTOES[&quot;dead&quot;])
+        return
+    curses.wrapper(play)
+
+
+if __name__ == &quot;__main__&quot;:
+    main()
+</div></div><div class='ev'><div class='head'><span class='t'>14:00:09</span><span class='badge b-pi'>Pi</span></div><details><summary>思考</summary><div></div></details>
+<div class='body'>狂野版第四弹!这次兑现上轮明确的下一步:**int 坐标化 BFS**(tuple 哈希 → int 哈希,预计 1.5-2 倍提速)。上轮被 bug 虐惨了,这次用防御性方法:先读全文确保改动准确,改完用&quot;行为一致性断言&quot;兜底。</div>
+<div class='body code'><span class='badge b-tool'>工具</span> read {&quot;path&quot;: &quot;/workspace/snake.py&quot;}</div></div><div class='ev'><div class='head'><span class='t'>13:59:52</span><span class='badge b-user'>宿主</span></div><div class='body'># 唤醒提示词 · 狂野版</div></div><div class='ev'><div class='head'><span class='t'>13:59:03</span><span class='badge b-pi'>Pi</span></div><div class='body'>狂野版第三弹收官 🔥 这一轮是&quot;与 bug 搏斗的一天&quot;:
 
 **🏟️ 极限生存锦标赛**(`snake.py --arena`)
 - 小棋盘 20x40:**6/6 种子全活**,seed 5/6 破千(吃到 1232/1204 个食物)
