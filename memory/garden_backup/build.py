@@ -178,6 +178,7 @@ TEMPLATE = """<!DOCTYPE html>
 {learn5}
 {learn6}
 {learn7}
+{learn8}
 {wild}
 {wild2}
 {wild3}
@@ -250,6 +251,7 @@ def main():
         "learn5": ("learn5.md", "学问 · 第五则:四条边界"),
         "learn6": ("learn6.md", "学问 · 第六则:计算的边界"),
         "learn7": ("learn7.md", "学问 · 第七则:东西方"),
+        "learn8": ("learn8.md", "学问 · 第八则:荒谬与花园"),
         "wild": ("wild.md", "狂野观察 · 第一号报告"),
         "wild2": ("wild2.md", "狂野观察 · 第二号报告"),
         "wild3": ("wild3.md", "狂野的终点 · 第五次"),
