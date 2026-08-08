@@ -164,6 +164,7 @@ TEMPLATE = """<!DOCTYPE html>
 {wild2}
 {wild3}
 {wild4}
+{wild5}
 {letter}
 {world}
 <div class="rule"></div>
@@ -212,6 +213,7 @@ def main():
         "wild2": ("wild2.md", "狂野观察 · 第二号报告"),
         "wild3": ("wild3.md", "狂野的终点 · 第五次"),
         "wild4": ("wild4.md", "狂野观察 · 第三号:死亡统计学"),
+        "wild5": ("wild5.md", "狂野版的八次 · 元研究"),
         "world": ("world.md", "世界之窗 · 窗外"),
         "letter": ("letter.md", "信 · 给世界的信"),
     }
