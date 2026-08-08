@@ -4,10 +4,11 @@ FROM alpine:3.20
 ARG PI_INSTALL=""
 ARG PI_CMD=/usr/local/bin/pi
 
-RUN apk add --no-cache bash tmux python3 curl wget ca-certificates openssl git jq \
+RUN apk add --no-cache bash tmux python3 curl wget ca-certificates openssl git jq tini \
     nodejs npm libstdc++
 
 COPY entrypoint.sh inject.sh /opt/
+COPY gateway.py /opt/
 COPY prompts/ /opt/prompts/
 RUN chmod +x /opt/entrypoint.sh /opt/inject.sh
 
@@ -29,4 +30,5 @@ RUN adduser -D -u 1000 agent
 # 注意: 不从镜像 USER 降权, 否则无法 chown 宿主挂载盘; entrypoint 内 su
 ENV HOME=/workspace TERM=xterm-256color
 
-ENTRYPOINT ["/opt/entrypoint.sh"]
+# tini 做 PID1: 回收孤儿/僵尸进程(pi 的 bash 工具大量 spawn, 普通 init 不回收会占满 pids 限额)
+ENTRYPOINT ["tini", "--", "/opt/entrypoint.sh"]

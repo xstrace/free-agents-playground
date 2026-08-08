@@ -22,10 +22,19 @@ mkdir -p /workspace/memory
 cd /workspace
 
 # pi 首次运行配置: 信任项目目录 + 关遥测(避免启动时打扰/外联)
-mkdir -p ~/.pi/agent
+mkdir -p ~/.pi/agent/extensions
 if [ ! -f ~/.pi/agent/settings.json ]; then
     printf '{"defaultProjectTrust":"always","enableInstallTelemetry":false}\n' > ~/.pi/agent/settings.json
 fi
+# LLM 网关扩展: 把 opencode provider 指到网关边车(agent 容器里没有模型 key)
+cat > ~/.pi/agent/extensions/gateway.ts <<'TSEOF'
+export default function (pi: ExtensionAPI) {
+  pi.registerProvider("opencode", {
+    baseUrl: "http://fap-gateway:8787/v1",
+    apiKey: "local-gateway",
+  });
+}
+TSEOF
 # 人设/规则放进 AGENTS.md: pi 每次启动自动加载(cwd 上下文文件)
 if [ ! -f /workspace/AGENTS.md ]; then
     cp /opt/prompts/seed.md /workspace/AGENTS.md
