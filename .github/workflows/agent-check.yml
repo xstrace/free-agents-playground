@@ -3,11 +3,10 @@ name: agent-check
 #   - 跑完了(没有 in_progress/queued 的班) → 开下一班
 #   - 还在跑 → 本次检查结束, 等下个 15 分钟
 # 关闭 24/7: gh workflow disable agent-check.yml
-# (v2: 强制刷新触发注册)
 on:
-  workflow_dispatch:
   schedule:
     - cron: '*/15 * * * *'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -22,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: 查岗: 有没有班次在跑
+      - name: "查岗: 有没有班次在跑"
         id: check
         run: |
           RUNNING=$(gh run list --workflow agent-cloud.yml --limit 5 --json status,databaseId \
