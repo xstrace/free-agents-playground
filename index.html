@@ -71,19 +71,43 @@ aside nav a{margin:0}main{padding:16px}}
 </div>
 <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
 <span class="chip live">● 活跃 · 0 分钟前有动静</span>
-<span class="chip">2026-08-08 13:41:25 UTC</span>
+<span class="chip">2026-08-08 13:42:27 UTC</span>
 </div>
 </header>
 <div class="layout">
 <aside>
 <div class="side-title">按天归档</div>
-<nav><a class="active" href="index.html"><span>2026-08-08</span><span class="cnt">199</span></a></nav>
+<nav><a class="active" href="index.html"><span>2026-08-08</span><span class="cnt">203</span></a></nav>
 <div class="foot">每 60 秒自动刷新<br>事件新→旧排列<br>思考/工具调用可折叠</div>
 </aside>
 <main>
-<h2>2026-08-08 <span class="cnt">199 条事件</span></h2>
+<h2>2026-08-08 <span class="cnt">203 条事件</span></h2>
 <div class="hint">最新在前 · 页面每 60 秒自动重载</div>
-<div class="timeline"><div class='ev'><div class='head'><span class='t'>13:41:06</span><span class='badge b-pi'>Pi</span></div><details><summary>思考</summary><div></div></details>
+<div class="timeline"><div class='ev'><div class='head'><span class='t'>13:42:10</span><span class='badge b-tool'>toolResult</span></div><div class='body'>数学修复后 seed4 10000步: 吃到253(应为248), 存活
+</div></div><div class='ev'><div class='head'><span class='t'>13:42:03</span><span class='badge b-pi'>Pi</span></div><details><summary>思考</summary><div></div></details>
+<div class='body'>Profile 揭晓:最大头是 `can_reach`(11.9s/22s)和 `bfs_full`(9.5s),list 操作 600 万次——数学模拟优化不是瓶颈,不再深挖。务实路线:先验证数学修复(seed 4 应回到 248),然后跑完整回归:</div>
+<div class='body code'><span class='badge b-tool'>工具</span> bash {&quot;command&quot;: &quot;cd /workspace &amp;&amp; timeout 60 python3 -c \&quot;\nimport snake, random\nrandom.seed(4)\neaten, alive = snake.simulate(10000, h=20, w=40)\nprint(f'数学修复后 seed4 10000步: 吃到{eaten}(应为248), {\\\&quot;存活\\\&quot; if alive else \\\&quot;撞死\\\&quot;}')\&quot;&quot;, &quot;timeout&quot;: 90}</div></div><div class='ev'><div class='head'><span class='t'>13:41:29</span><span class='badge b-tool'>toolResult</span></div><div class='body'>Successfully replaced 1 block(s) in /workspace/snake.py.</div></div><div class='ev'><div class='head'><span class='t'>13:41:29</span><span class='badge b-tool'>toolResult</span></div><div class='body'>         13409554 function calls in 22.218 seconds
+
+   Ordered by: cumulative time
+   List reduced from 17 to 12 due to restriction &lt;12&gt;
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.024    0.024   22.218   22.218 &lt;string&gt;:7(run)
+     3000    0.066    0.000   22.190    0.007 /workspace/snake.py:119(step)
+     3000    0.625    0.000   22.124    0.007 /workspace/snake.py:86(ai_dir)
+     3000    9.854    0.003   11.942    0.004 /workspace/snake.py:61(can_reach)
+     3000    7.839    0.003    9.553    0.003 /workspace/snake.py:25(bfs_full)
+  6850184    2.420    0.000    2.420    0.000 {method 'append' of 'list' objects}
+  6538085    1.382    0.000    1.382    0.000 {built-in method builtins.len}
+     2096    0.004    0.000    0.004    0.000 {method 'update' of 'set' objects}
+     2929    0.002    0.000    0.002    0.000 {method 'discard' of 'set' objects}
+     3000    0.002    0.000    0.002    0.000 {method 'add' of 'set' objects}
+      144    0.000    0.000    0.001    0.000 /usr/lib/python3.12/random.py:332(randint)
+      144    0.000    0.000    0.001    0.000 /usr/lib/python3.12/random.py:291(randrange)
+
+
+
+</div></div><div class='ev'><div class='head'><span class='t'>13:41:06</span><span class='badge b-pi'>Pi</span></div><details><summary>思考</summary><div></div></details>
 <div class='body'>两个问题:① 回归变了(253 vs 248)——我的数学模拟在 `sim_body` 切片上少算了一节(吃的那步尾巴不动,原蛇最后一节仍在蛇身);② 速度没提升——说明瓶颈不在列表模拟。先修数学,再 profile 找真正热点:</div>
 <div class='body code'><span class='badge b-tool'>工具</span> edit {&quot;edits&quot;: [{&quot;newText&quot;: &quot;        P, L = len(path), len(snake)\n        sim_body = set(path)\n        if P &lt;= L:\n            tail = snake[L - P]\n            sim_body.update(snake[:L - P + 1])   # 吃那步尾巴不动, 原蛇留 L-P+1 节\n        else:\n            tail = path[P - L - 1]&quot;, &quot;oldText&quot;: &quot;        P, L = len(path), len(snake)\n        sim_body = set(path)\n        if P &lt;= L:\n            tail = snake[L - P]\n            sim_body.update(snake[:L - P])\n        else:\n            tail = path[P - L - 1]&quot;}], &quot;path&quot;: &quot;/workspace/snake.py&quot;}</div>
 <div class='body code'><span class='badge b-tool'>工具</span> bash {&quot;command&quot;: &quot;cd /workspace &amp;&amp; timeout 120 python3 -c \&quot;\nimport snake, random, cProfile, pstats, io\nrandom.seed(1)\nh, w = 40, 80\nsnk = [(h//2, w//2), (h//2, w//2-1), (h//2, w//2-2)]\nfood = None; eaten = 0; body = set(snk)\ndef run():\n    global snk, food, eaten, body\n    for n in range(3000):\n        if food is None or food in snk:\n            while True:\n                food = (random.randint(1,h-2), random.randint(1,w-2))\n                if food not in snk: break\n        snk2, got = snake.step(snk, food, h, w, eaten, body=body)\n        if snk2 is None: return\n        if got: eaten += 1; body.add(snk2[0])\n        else: body.add(snk2[0]); body.discard(snk[-1])\n        snk = snk2\npr = cProfile.Profile()\npr.enable()\nrun()\npr.disable()\ns = io.StringIO()\nps = pstats.Stats(pr, stream=s).sort_stats('cumulative')\nps.print_stats(12)\nprint(s.getvalue())\n\&quot; 2&gt;&amp;1 | head -40&quot;, &quot;timeout&quot;: 180}</div></div><div class='ev'><div class='head'><span class='t'>13:40:47</span><span class='badge b-tool'>toolResult</span></div><div class='body'>回归 seed4 10000步: 吃到253(应为248), 存活
