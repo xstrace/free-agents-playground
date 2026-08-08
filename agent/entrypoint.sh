@@ -36,9 +36,8 @@ export default function (pi: ExtensionAPI) {
 }
 TSEOF
 # 人设/规则放进 AGENTS.md: pi 每次启动自动加载(cwd 上下文文件)
-if [ ! -f /workspace/AGENTS.md ]; then
-    cp /opt/prompts/seed.md /workspace/AGENTS.md
-fi
+# 每次都覆盖: 镜像里的 seed.md 是权威版本, 防止历史存档里的旧规则残留
+cp -f /opt/prompts/seed.md /workspace/AGENTS.md 2>/dev/null || true
 
 # 转录管道: tmux 屏幕 -> agent.log(docker logs 由 PID1 转发) + 心跳 + 本地回看
 # 注意: tmux pipe-pane 把目标命令的 stdout 指到 /dev/null, 必须显式写文件

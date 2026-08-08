@@ -16,7 +16,6 @@
 """
 import json
 import os
-import random
 import subprocess
 import sys
 import time
@@ -27,14 +26,12 @@ AUDIT = os.path.join(ROOT, "audit")
 PROMPTS = os.path.join(ROOT, "agent", "prompts")
 os.makedirs(AUDIT, exist_ok=True)
 
-CLOUD = os.environ.get("FAP_CLOUD") == "1"
 CT = "fap-agent"
 TICK = 5
 LOOP_INTERVAL_SEC = int(os.environ.get("LOOP_INTERVAL_SEC", "60"))
 IDLE_DONE_SEC = int(os.environ.get("IDLE_DONE_SEC", "45"))
 HEARTBEAT = "/workspace/.heartbeat"
 SEED_MARKER = "/workspace/.seeded"
-HEARTBEAT_PROMPTS = ["heartbeat.md", "heartbeat-wild.md", "heartbeat-quiet.md"]
 
 STATE_FILE = os.path.join(AUDIT, "last_inject.ts")
 LOG_FILE = os.path.join(AUDIT, "supervisor.jsonl")
@@ -52,43 +49,24 @@ def log(event, **kw):
 
 
 def agent_exec(args, user="agent", timeout=30):
-    """进 agent 容器跑命令(VPS 用 compose exec, 云端用 docker exec)"""
-    if CLOUD:
-        cmd = ["docker", "exec", "-u", user, CT, *args]
-    else:
-        cmd = ["docker", "compose", "exec", "-u", user, "-T", "agent", *args]
-    return subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, timeout=timeout)
-
-
-def sh(*args, timeout=60):
-    try:
-        r = subprocess.run(
-            ["docker", "compose", *args], cwd=ROOT,
-            capture_output=True, text=True, timeout=timeout,
-        )
-        return r.stdout.strip() if r.stdout else r.returncode
-    except subprocess.TimeoutExpired:
-        return -1
+    """进 agent 容器跑命令(容器在 runner 上, 直接 docker exec)"""
+    return subprocess.run(["docker", "exec", "-u", user, CT, *args],
+                          cwd=ROOT, capture_output=True, text=True, timeout=timeout)
 
 
 def container_up():
-    if CLOUD:
-        r = subprocess.run(["docker", "ps", "-q", "-f", f"name={CT}"],
-                           capture_output=True, text=True, timeout=30)
-        return bool(r.stdout.strip())
-    return bool(sh("ps", "-q", "agent"))
+    r = subprocess.run(["docker", "ps", "-q", "-f", f"name={CT}"],
+                       capture_output=True, text=True, timeout=30)
+    return bool(r.stdout.strip())
 
 
 def container_start():
-    """容器挂了时拉起"""
-    if CLOUD:
-        script = os.path.join(ROOT, "data", "restart-agent.sh")
-        if os.path.exists(script):
-            subprocess.run(["bash", script], cwd=ROOT, timeout=120)
-        else:
-            log("error", err="云端模式缺 data/restart-agent.sh")
+    """容器挂了时拉起(restart-agent.sh 由 workflow 生成)"""
+    script = os.path.join(ROOT, "data", "restart-agent.sh")
+    if os.path.exists(script):
+        subprocess.run(["bash", script], cwd=ROOT, timeout=120)
     else:
-        sh("up", "-d", "agent")
+        log("error", err="缺 data/restart-agent.sh")
 
 
 def tmux_alive():
@@ -146,16 +124,10 @@ def seed_if_needed():
 
 def snapshot_memory():
     # 注意: 这里必须拿 bytes(不 text 化), tarfile 需要二进制流
-    if CLOUD:
-        r = subprocess.run(
-            ["docker", "exec", "fap-agent", "sh", "-c",
-             "tar -cf - -C /workspace memory 2>/dev/null || true"],
-            cwd=ROOT, capture_output=True, timeout=60)
-    else:
-        r = subprocess.run(
-            ["docker", "compose", "exec", "-T", "agent", "sh", "-c",
-             "tar -cf - -C /workspace memory 2>/dev/null || true"],
-            cwd=ROOT, capture_output=True, timeout=60)
+    r = subprocess.run(
+        ["docker", "exec", "fap-agent", "sh", "-c",
+         "tar -cf - -C /workspace memory 2>/dev/null || true"],
+        cwd=ROOT, capture_output=True, timeout=60)
     if r.returncode == 0 and r.stdout:
         os.makedirs(os.path.join(AUDIT, "memory-snapshot"), exist_ok=True)
         import tarfile, io
@@ -168,22 +140,16 @@ def transcript_tailer():
     """跟随 docker logs, 逐字转录到 audit/transcript.log(追加)。"""
     path = os.path.join(AUDIT, "transcript.log")
     while True:
-        if CLOUD:
-            p = subprocess.Popen(
-                ["docker", "logs", "-f", "--timestamps", CT],
-                cwd=ROOT, stdout=open(path, "a"), stderr=subprocess.STDOUT,
-            )
-        else:
-            p = subprocess.Popen(
-                ["docker", "compose", "logs", "-f", "--timestamps", "agent"],
-                cwd=ROOT, stdout=open(path, "a"), stderr=subprocess.STDOUT,
-            )
+        p = subprocess.Popen(
+            ["docker", "logs", "-f", "--timestamps", CT],
+            cwd=ROOT, stdout=open(path, "a"), stderr=subprocess.STDOUT,
+        )
         p.wait()
         time.sleep(2)
 
 
 def main():
-    log("supervisor_start", loop_interval=LOOP_INTERVAL_SEC, idle_done=IDLE_DONE_SEC, cloud=CLOUD)
+    log("supervisor_start", loop_interval=LOOP_INTERVAL_SEC, idle_done=IDLE_DONE_SEC)
 
     import threading
     threading.Thread(target=transcript_tailer, daemon=True).start()
@@ -214,8 +180,7 @@ def main():
                 idle = (t - hb) if hb else 9999
                 if idle > IDLE_DONE_SEC and t - last_inject() > LOOP_INTERVAL_SEC:
                     log("idle_detect", idle_sec=int(idle), action="inject_heartbeat")
-                    tpl = random.choice(HEARTBEAT_PROMPTS)
-                    inject(render(tpl, TIMESTAMP=now_iso()))
+                    inject(render("heartbeat.md", TIMESTAMP=now_iso()))
 
             if t - last_snapshot > 3600:
                 snapshot_memory()

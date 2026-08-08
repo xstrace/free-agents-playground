@@ -1,4 +1,4 @@
-# agent 容器: 只读 rootfs, 唯一可写 = /workspace(10G ext4) + /memory(64m) + /tmp
+# agent 容器: 只读 rootfs, 唯一可写 = /workspace(bind) + /memory(tmpfs) + /tmp
 FROM alpine:3.20
 
 ARG PI_INSTALL=""

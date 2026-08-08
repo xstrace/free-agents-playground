@@ -19,7 +19,6 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 AUDIT = os.path.join(ROOT, "audit")
 os.makedirs(AUDIT, exist_ok=True)
 
-CLOUD = os.environ.get("FAP_CLOUD") == "1"
 ALL_EVENTS = []
 INTERVAL = int(os.environ.get("PAGES_INTERVAL", "60"))
 ONCE = os.environ.get("PAGES_ONCE") == "1"
@@ -219,12 +218,8 @@ def render_markdown(text, compact=False):
 
 
 def agent_exec(args, user="agent", timeout=120):
-    if CLOUD:
-        cmd = ["docker", "exec", "-u", user, "fap-agent", *args]
-    else:
-        cmd = ["docker", "compose", "exec", "-u", user, "-T", "agent", *args]
-    r = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, timeout=timeout)
-    return r
+    return subprocess.run(["docker", "exec", "-u", user, "fap-agent", *args],
+                          cwd=ROOT, capture_output=True, text=True, timeout=timeout)
 
 
 def pull_latest_session():
