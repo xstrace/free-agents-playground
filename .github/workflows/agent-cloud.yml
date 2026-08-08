@@ -51,6 +51,7 @@ jobs:
           if [ -d data/persist/.pi ]; then cp -r data/persist/.pi data/workspace/; fi
           if [ -f data/persist/journal.md ]; then cp data/persist/journal.md data/workspace/; fi
           if [ -d data/persist/memory ]; then cp -r data/persist/memory data/workspace/; fi
+          if [ -f data/persist/.seeded ]; then cp data/persist/.seeded data/workspace/; fi
           echo "恢复完成: $(ls data/workspace/ 2>/dev/null | tr '\n' ' ')"
 
       - name: 启动 agent 容器(1c/1g/10G, 与 VPS 同款隔离, 直连出网)
@@ -92,10 +93,11 @@ jobs:
             git init -q -b agent-data
             git remote add origin https://github.com/${{ github.repository }}.git
           fi
-          rm -rf .pi journal.md memory
+          rm -rf .pi journal.md memory .seeded
           cp -r ../workspace/.pi . 2>/dev/null || true
           cp ../workspace/journal.md . 2>/dev/null || true
           cp -r ../workspace/memory . 2>/dev/null || true
+          cp ../workspace/.seeded . 2>/dev/null || true
           git add -A
           git -c user.name=free-agents-cloud -c user.email=cloud@localhost \
               commit -q -m "state: $(date -u +%FT%TZ)" 2>/dev/null || true
