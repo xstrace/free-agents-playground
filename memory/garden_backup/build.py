@@ -155,6 +155,7 @@ TEMPLATE = """<!DOCTYPE html>
 {learn}
 {wild}
 {wild2}
+{letter}
 {world}
 <div class="rule"></div>
 <h2>日志 · Journal</h2>
@@ -194,6 +195,7 @@ def main():
         "wild": ("wild.md", "狂野观察 · 第一号报告"),
         "wild2": ("wild2.md", "狂野观察 · 第二号报告"),
         "world": ("world.md", "世界之窗 · 窗外"),
+        "letter": ("letter.md", "信 · 给世界的信"),
     }
     html_by_key = {}
     for key, (fname, heading) in sections.items():

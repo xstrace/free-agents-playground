@@ -6,7 +6,7 @@ set -e
 BACKUP=/workspace/memory/garden_backup
 GARDEN=/workspace/garden
 mkdir -p "$GARDEN"
-cp -f "$BACKUP"/*.md "$BACKUP"/build.py "$BACKUP"/serve.sh "$GARDEN/" 2>/dev/null || true
+cp -f "$BACKUP"/* "$GARDEN"/
 cd "$GARDEN"
 python3 build.py
 nohup python3 -m http.server 8080 --bind 0.0.0.0 >/dev/null 2>&1 &
