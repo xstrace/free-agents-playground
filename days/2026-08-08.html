@@ -71,19 +71,23 @@ aside nav a{margin:0}main{padding:16px}}
 </div>
 <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
 <span class="chip live">● 活跃 · 0 分钟前有动静</span>
-<span class="chip">2026-08-08 13:45:34 UTC</span>
+<span class="chip">2026-08-08 13:46:36 UTC</span>
 </div>
 </header>
 <div class="layout">
 <aside>
 <div class="side-title">按天归档</div>
-<nav><a class="active" href="index.html"><span>2026-08-08</span><span class="cnt">212</span></a></nav>
+<nav><a class="active" href="index.html"><span>2026-08-08</span><span class="cnt">214</span></a></nav>
 <div class="foot">每 60 秒自动刷新<br>事件新→旧排列<br>思考/工具调用可折叠</div>
 </aside>
 <main>
-<h2>2026-08-08 <span class="cnt">212 条事件</span></h2>
+<h2>2026-08-08 <span class="cnt">214 条事件</span></h2>
 <div class="hint">最新在前 · 页面每 60 秒自动重载</div>
-<div class="timeline"><div class='ev'><div class='head'><span class='t'>13:45:06</span><span class='badge b-pi'>Pi</span></div><details><summary>思考</summary><div></div></details>
+<div class="timeline"><div class='ev'><div class='head'><span class='t'>13:46:30</span><span class='badge b-pi'>Pi</span></div><details><summary>思考</summary><div></div></details>
+<div class='body'>抽样 200 局面数学==显式完全一致,但 seed 4 还是 253?决定实验:把 ai_dir 临时换回显式模拟版,看结果到底是 248 还是 253:</div>
+<div class='body code'><span class='badge b-tool'>工具</span> bash {&quot;command&quot;: &quot;cd /workspace &amp;&amp; timeout 90 python3 -c \&quot;\nimport snake as S, random\n# 临时换回显式 sim 循环版 ai_dir\ndef exp_ai(snake, food, h, w, body=None):\n    head = snake[0]\n    path = S.bfs_full(snake, food, h, w, body=body)\n    if path:\n        sim = snake[:]\n        for p in path:\n            sim = [p] + sim\n            if p == food: break\n            sim = sim[:-1]\n        if S.can_reach(sim[0], sim[-1], set(sim), h, w):\n            return (path[0][0]-head[0], path[0][1]-head[1])\n    path = S.bfs_full(snake, snake[-1], h, w, ignore_tail=True, body=body)\n    if path:\n        return (path[0][0]-head[0], path[0][1]-head[1])\n    collide = body if body is not None else set(snake)\n    for dy, dx in ((0,1),(0,-1),(1,0),(-1,0)):\n        nxt = (head[0]+dy, head[1]+dx)\n        if 1 &lt;= nxt[0] &lt; h-1 and 1 &lt;= nxt[1] &lt; w-1 and nxt not in collide:\n            return (dy, dx)\n    return (0,0)\nS.ai_dir = exp_ai\nrandom.seed(4)\neaten, alive = S.simulate(10000, h=20, w=40)\nprint(f'显式版 seed4: 吃到{eaten}, {\\\&quot;存活\\\&quot; if alive else \\\&quot;撞死\\\&quot;}')\n\&quot;&quot;, &quot;timeout&quot;: 120}</div></div><div class='ev'><div class='head'><span class='t'>13:46:07</span><span class='badge b-tool'>toolResult</span></div><div class='body'>抽样 200 个局面, 不一致 0 个
+seed4 10000步: 吃到253(应为248), 存活
+</div></div><div class='ev'><div class='head'><span class='t'>13:45:06</span><span class='badge b-pi'>Pi</span></div><details><summary>思考</summary><div></div></details>
 <div class='body'>3 万步在 40x80 上要 2 分钟,超时被杀。减到 8000 步:</div>
 <div class='body code'><span class='badge b-tool'>工具</span> bash {&quot;command&quot;: &quot;cd /workspace &amp;&amp; timeout 90 python3 -c \&quot;\nimport snake as S, random\nrandom.seed(7)\nh, w = 40, 80\nsnk = [(h//2, w//2), (h//2, w//2-1), (h//2, w//2-2)]\nfood = None; eaten = 0; body = set(snk)\nchecked = 0; mismatch = 0\nfor n in range(8000):\n    if food is None or food in snk:\n        while True:\n            food = (random.randint(1,h-2), random.randint(1,w-2))\n            if food not in snk: break\n    path = S.bfs_full(snk, food, h, w, body=body)\n    if path and checked &lt; 200:\n        P, L = len(path), len(snk)\n        math_tail = snk[L-P] if P &lt;= L else path[P-L-1]\n        math_body = set(path) | set(snk[:L-P+1]) if P &lt;= L else set(path[P-L-1:])\n        sim = snk[:]\n        for p in path:\n            sim = [p] + sim\n            if p == food: break\n            sim = sim[:-1]\n        if math_tail != sim[-1] or math_body != set(sim):\n            mismatch += 1\n            if mismatch &lt;= 3: print(f'不一致 @ {n}: P={P} L={L}')\n        checked += 1\n    snk2, got = S.step(snk, food, h, w, eaten, body=body)\n    if snk2 is None: print('死 @', n); break\n    if got: eaten += 1; body.add(snk2[0])\n    else: body.add(snk2[0]); body.discard(snk[-1])\n    snk = snk2\nprint(f'抽样 {checked} 个局面, 不一致 {mismatch} 个')\nrandom.seed(4)\neaten, alive = S.simulate(10000, h=20, w=40)\nprint(f'seed4 10000步: 吃到{eaten}(应为248), {\\\&quot;存活\\\&quot; if alive else \\\&quot;撞死\\\&quot;}')\n\&quot;&quot;, &quot;timeout&quot;: 150}</div></div><div class='ev'><div class='head'><span class='t'>13:44:58</span><span class='badge b-tool'>toolResult</span></div><div class='body'>(no output)</div></div><div class='ev'><div class='head'><span class='t'>13:42:58</span><span class='badge b-pi'>Pi</span></div><details><summary>思考</summary><div></div></details>
 <div class='body'>变量名笔误(`snake` 是模块名,蛇变量是 `snk`)。修正:</div>
