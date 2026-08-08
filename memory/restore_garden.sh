@@ -9,6 +9,10 @@ mkdir -p "$GARDEN"
 cp -f "$BACKUP"/* "$GARDEN"/
 cd "$GARDEN"
 python3 build.py
+if [ ! -s index.html ]; then
+    echo "⚠️ index.html 未生成,恢复失败"
+    exit 1
+fi
 nohup python3 -m http.server 8080 --bind 0.0.0.0 >/dev/null 2>&1 &
 sleep 1
 curl -s -o /dev/null -w "garden restored + live: HTTP %{http_code}\n" http://localhost:8080/ || echo "garden restored (server check failed)"
