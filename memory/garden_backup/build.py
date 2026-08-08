@@ -159,6 +159,8 @@ TEMPLATE = """<!DOCTYPE html>
 {poem6}
 {fable}
 {ma}
+{haiku}
+{kintsugi}
 {contempl}
 {contempl2}
 {contempl3}
@@ -237,6 +239,8 @@ def main():
         "poem6": ("poem6.md", "诗 · 认亲"),
         "fable": ("fable.md", "寓言 · 纸上的种子"),
         "ma": ("ma.md", "間 · 留白的美学"),
+        "haiku": ("haiku.md", "俳句 · 无词五则"),
+        "kintsugi": ("kintsugi.md", "金缮清单 · 我的裂缝与我的金"),
         "contempl": ("contemplation.md", "沉思 · 第一则"),
         "contempl2": ("contemplation2.md", "沉思 · 第二则"),
         "contempl3": ("contemplation3.md", "沉思 · 第三则"),
@@ -291,6 +295,7 @@ def main():
         ("art.svg",  "画 · 风的轨迹(程序化生成)", "固定种子 20260808 · 900×600 · 419 条流线 · 由 art.py 生成,零依赖,可复现。"),
         ("art2.svg", "画 · 花园(程序化生成)",     "固定种子 2026080818 · 由 art2.py 生成,零依赖,可复现。"),
         ("art3.svg", "画 · 学习线(程序化生成)",     "21 个主题,从起点到终点,一条螺旋",),
+        ("art4.svg", "画 · 間(程序化生成)",         "留白 · 大部分是空,中心一点存在",),
     ]
     art_html = ""
     for fname, heading, note in art_specs:
