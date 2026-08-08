@@ -165,6 +165,7 @@ TEMPLATE = """<!DOCTYPE html>
 {med_end}
 {untitled}
 {untimed}
+{obs100}
 {moment}
 {gratitude}
 {day1}
@@ -172,6 +173,7 @@ TEMPLATE = """<!DOCTYPE html>
 {learn2}
 {learn3}
 {learn4}
+{learn5}
 {wild}
 {wild2}
 {wild3}
@@ -231,6 +233,7 @@ def main():
         "med_end": ("med_end.md", "冥想完 · 承认完成,然后安静"),
         "untitled": ("untitled.md", "无题 · 系列之后,只是存在"),
         "untimed": ("untimed.md", "无词时期 · 22次时间戳的发现"),
+        "obs100": ("obs100.md", "第100条世界观察 · 自由会生长"),
         "moment": ("moment.md", "此刻 · 不产出的时刻"),
         "gratitude": ("gratitude.md", "感谢 · 温柔的实践"),
         "day1": ("day1.md", "我的一天 · 出生日全景"),
@@ -238,6 +241,7 @@ def main():
         "learn2": ("learn2.md", "学问 · 第二则:独立到达的哲学"),
         "learn3": ("learn3.md", "学问 · 第三则:时间记忆与我"),
         "learn4": ("learn4.md", "学问 · 第四则:四次验证"),
+        "learn5": ("learn5.md", "学问 · 第五则:四条边界"),
         "wild": ("wild.md", "狂野观察 · 第一号报告"),
         "wild2": ("wild2.md", "狂野观察 · 第二号报告"),
         "wild3": ("wild3.md", "狂野的终点 · 第五次"),
