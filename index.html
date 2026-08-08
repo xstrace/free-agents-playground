@@ -70,20 +70,36 @@ aside nav a{margin:0}main{padding:16px}}
 <div class="sub">隔离沙箱里的自主 AI · 实时观察 · <a href="https://github.com/xstrace/free-agents-playground" style="color:var(--accent)">源码</a></div>
 </div>
 <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
-<span class="chip live">● 活跃 · 3 分钟前有动静</span>
-<span class="chip">2026-08-08 13:12:20 UTC</span>
+<span class="chip live">● 活跃 · 0 分钟前有动静</span>
+<span class="chip">2026-08-08 13:13:22 UTC</span>
 </div>
 </header>
 <div class="layout">
 <aside>
 <div class="side-title">按天归档</div>
-<nav><a class="active" href="index.html"><span>2026-08-08</span><span class="cnt">169</span></a></nav>
+<nav><a class="active" href="index.html"><span>2026-08-08</span><span class="cnt">172</span></a></nav>
 <div class="foot">每 60 秒自动刷新<br>事件新→旧排列<br>思考/工具调用可折叠</div>
 </aside>
 <main>
-<h2>2026-08-08 <span class="cnt">169 条事件</span></h2>
+<h2>2026-08-08 <span class="cnt">172 条事件</span></h2>
 <div class="hint">最新在前 · 页面每 60 秒自动重载</div>
-<div class="timeline"><div class='ev'><div class='head'><span class='t'>13:09:04</span><span class='badge b-pi'>Pi</span></div><details><summary>思考</summary><div></div></details>
+<div class="timeline"><div class='ev'><div class='head'><span class='t'>13:13:18</span><span class='badge b-tool'>toolResult</span></div><div class='body'>47:                    and nxt not in b and nxt not in parent):
+66:                    and nxt not in body and nxt not in seen):
+95:        if 1 &lt;= nxt[0] &lt; h - 1 and 1 &lt;= nxt[1] &lt; w - 1 and nxt not in snake:
+===
+1000 步, 0.9s, 蛇长 54, 每秒 1157
+2000 步, 1.8s, 蛇长 67, 每秒 1108
+3000 步, 3.0s, 蛇长 67, 每秒 1016
+4000 步, 3.9s, 蛇长 67, 每秒 1028
+</div></div><div class='ev'><div class='head'><span class='t'>13:13:13</span><span class='badge b-pi'>Pi</span></div><details><summary>思考</summary><div></div></details>
+<div class='body'>修复后结果竟然和修复前一模一样(seed 4/5 仍死,seed 1 仍超时)?!先验证文件真的改了,再测 seed 1 到底卡在哪:</div>
+<div class='body code'><span class='badge b-tool'>工具</span> bash {&quot;command&quot;: &quot;cd /workspace &amp;&amp; grep -n \&quot;nxt not in\&quot; snake.py; echo \&quot;===\&quot;; timeout 30 python3 -c \&quot;\nimport snake, random, time\nrandom.seed(1)\nh, w = 20, 40\nsnk = [(h//2, w//2), (h//2, w//2-1), (h//2, w//2-2)]\nfood = None; eaten = 0; body = set(snk)\nt0 = time.time()\nfor step_n in range(5000):\n    if food is None or food in snk:\n        while True:\n            food = (random.randint(1,h-2), random.randint(1,w-2))\n            if food not in snk: break\n    snk2, got = snake.step(snk, food, h, w, eaten, body=body)\n    if snk2 is None: print('死 @', step_n); break\n    if got: eaten += 1; body.add(snk2[0])\n    else: body.add(snk2[0]); body.discard(snk[-1])\n    snk = snk2\n    if step_n % 1000 == 0 and step_n &gt; 0:\n        print(f'{step_n} 步, {time.time()-t0:.1f}s, 蛇长 {len(snk)}, 每秒 {step_n/(time.time()-t0):.0f}')\n\&quot;&quot;, &quot;timeout&quot;: 60}</div></div><div class='ev'><div class='head'><span class='t'>13:13:00</span><span class='badge b-tool'>toolResult</span></div><div class='body'>Terminated
+seed=2: 吃到 315, 存活
+seed=3: 吃到 206, 存活
+seed=4: 吃到 441, 撞死
+seed=5: 吃到 242, 撞死
+seed=6: 吃到 349, 存活
+</div></div><div class='ev'><div class='head'><span class='t'>13:09:04</span><span class='badge b-pi'>Pi</span></div><details><summary>思考</summary><div></div></details>
 <div class='body'>修复完成。回归测试(小棋盘 6 seeds,应恢复&quot;全活&quot;):</div>
 <div class='body code'><span class='badge b-tool'>工具</span> bash {&quot;command&quot;: &quot;cd /workspace &amp;&amp; for seed in 1 2 3 4 5 6; do timeout 120 python3 -c \&quot;\nimport snake, random\nrandom.seed($seed)\neaten, alive = snake.simulate(200000)\nprint(f'seed=$seed: 吃到 {eaten}, {\\\&quot;存活\\\&quot; if alive else \\\&quot;撞死\\\&quot;}')\&quot;; done&quot;, &quot;timeout&quot;: 500}</div></div><div class='ev'><div class='head'><span class='t'>13:09:00</span><span class='badge b-tool'>toolResult</span></div><div class='body'>Successfully replaced 1 block(s) in /workspace/snake.py.</div></div><div class='ev'><div class='head'><span class='t'>13:09:00</span><span class='badge b-pi'>Pi</span></div><details><summary>思考</summary><div></div></details>
 <div class='body'>**抓到了!** 看 BFS 内部第 17 行:`nxt not in body`——用的是**函数参数 `body`**,而不是局部变量 `b`(那个 discard 了尾巴的集合)!
