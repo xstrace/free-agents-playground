@@ -1,16 +1,20 @@
 name: agent-cloud
-# 云端 24/7 自主 agent:
-#   - 每轮一个 job(默认 ~55 分钟, 上限 6h), 结束前把会话/心得存进 agent-data 分支
+# 云端 24/7 自主 agent(GitHub Actions 原生, 无代理直连出网):
+#   - 每轮一个 job(默认 ~5 小时, 上限 6h), 每 10 分钟自动存档到 agent-data
 #   - 下一班启动时拉回 → pi -c 无缝续命(上下文不丢)
-#   - 镜像从 ghcr 拉(由 build-images 预构建), 引导时间 ~1 分钟, 其余全给 agent
-#   - 何时开下一班由 agent-check.yml 决定(每 15 分钟查岗: 上一班跑完才开, 没跑完就跳过)
+#   - 镜像从 ghcr 拉(由 build-images 预构建), 引导时间 ~1 分钟
+#   - 何时开下一班由 agent-check.yml 决定(每 15 分钟查岗: 跑完才开, 没跑完跳过)
 #   - 每班结束渲染推送 GitHub Pages(站点由云端接管)
+#   - 资源: runner 是 4c/16G/14G 盘, 放开给 agent(3c/12G), 最大化利用
 on:
   workflow_dispatch:
     inputs:
       budget_min:
-        description: '每轮运行分钟数'
-        default: '55'
+        description: '每轮运行分钟数(上限 355)'
+        default: '300'
+  push:
+    branches: [main]
+    paths: ['scripts/**', 'watcher/**', 'agent/**']
 
 permissions:
   contents: write
@@ -25,7 +29,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 360
     env:
-      BUDGET_MIN: ${{ inputs.budget_min || vars.BUDGET_MIN || '55' }}
+      BUDGET_MIN: ${{ inputs.budget_min || vars.BUDGET_MIN || '300' }}
+      GH_REPO: ${{ github.repository }}
       OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
     steps:
       - uses: actions/checkout@v4
@@ -52,19 +57,19 @@ jobs:
           if [ -f data/persist/.seeded ]; then cp data/persist/.seeded data/workspace/; fi
           echo "恢复完成: $(ls data/workspace/ 2>/dev/null | tr '\n' ' ')"
 
-      - name: 启动 agent 容器(1c/1g/10G, 与 VPS 同款隔离, 直连出网)
+      - name: 启动 agent 容器(3c/12G, runner 资源最大化)
         run: |
           cat > data/restart-agent.sh <<'EOS'
           #!/bin/bash
           docker rm -f fap-agent 2>/dev/null
           docker run -d --name fap-agent \
-            --cpus 1 --memory 1g --memory-swap 1g --pids-limit 512 \
+            --cpus 3 --memory 12g --memory-swap 12g --pids-limit 4096 \
             --cap-drop ALL --cap-add SETUID --cap-add SETGID --cap-add CHOWN \
             --security-opt no-new-privileges \
             --read-only \
-            --tmpfs /tmp:size=64m,mode=1777 \
+            --tmpfs /tmp:size=256m,mode=1777 \
             --tmpfs /run:size=16m,mode=0755 \
-            --tmpfs /memory:size=64m,mode=0777 \
+            --tmpfs /memory:size=128m,mode=0777 \
             -v "$(pwd)/data/workspace:/workspace" \
             -e PI_CMD="/usr/local/bin/pi -c --model opencode/deepseek-v4-flash-free" \
             -e PI_SKIP_VERSION_CHECK=1 \
@@ -78,32 +83,18 @@ jobs:
           sleep 8
           docker ps --format "{{.Names}} {{.Status}}" | grep fap-agent
 
-      - name: 运行 supervisor(预算内持续驱动)
+      - name: 运行 supervisor(预算内持续驱动, 每 10 分钟自动存档)
         run: |
           mkdir -p audit
-          FAP_CLOUD=1 timeout $((BUDGET_MIN * 60)) python3 watcher/supervisor.py 2>&1 | tail -50
+          FAP_CLOUD=1 timeout $((BUDGET_MIN * 60)) python3 watcher/supervisor.py 2>&1 | tail -30 &
+          SUPERVISOR_PID=$!
+          while kill -0 $SUPERVISOR_PID 2>/dev/null; do
+            sleep 600
+            bash scripts/cloud-save.sh
+          done
+          wait $SUPERVISOR_PID || true
 
-      - name: 保存会话到 agent-data 分支(下一班续命)
+      - name: 班末存档 + 渲染推送 Pages
         if: always()
         run: |
-          cd data/persist
-          if [ ! -d .git ]; then
-            git init -q -b agent-data
-            git remote add origin https://github.com/${{ github.repository }}.git
-          fi
-          rm -rf .pi journal.md memory .seeded
-          cp -r ../workspace/.pi . 2>/dev/null || true
-          cp ../workspace/journal.md . 2>/dev/null || true
-          cp -r ../workspace/memory . 2>/dev/null || true
-          cp ../workspace/.seeded . 2>/dev/null || true
-          git add -A
-          git -c user.name=free-agents-cloud -c user.email=cloud@localhost \
-              commit -q -m "state: $(date -u +%FT%TZ)" 2>/dev/null || true
-          git push -q -u origin agent-data 2>&1 | tail -1 || true
-          echo "会话已存档(agent-data)"
-
-      - name: 渲染并推送 GitHub Pages(云端会话流)
-        if: always()
-        run: |
-          PAGES_ONCE=1 PAGES_LOCAL_WS="$PWD/data/workspace" \
-            python3 watcher/pages.py 2>&1 | tail -3
+          timeout 240 bash scripts/cloud-save.sh --pages
