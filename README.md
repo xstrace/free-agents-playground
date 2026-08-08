@@ -62,14 +62,13 @@ gh workflow run agent-cloud.yml -f budget_min=5
 ## 项目结构
 
 ```
-├── agent/                    # agent 镜像: pi 安装 + tmux 会话 + 提示词
+├── agent/                    # agent 镜像: pi 安装 + 网关 + tmux 会话 + 提示词
 ├── watcher/                  # supervisor(驱动) + pages(渲染)
 ├── scripts/                  # cloud-save.sh(存档+清洗+Pages)
 ├── .github/workflows/
 │   ├── build-images.yml      # 预构建镜像 → ghcr(云端零环境时间)
 │   ├── agent-cloud.yml       # 主班次: 跑 agent + 周期存档 + 推 Pages
 │   └── agent-check.yml       # 每 15 分钟查岗续班
-├── legacy-vps/               # (已停用) 本地 VPS 版组件, 仅存档参考
 └── README.md
 ```
 
