@@ -70,20 +70,23 @@ aside nav a{margin:0}main{padding:16px}}
 <div class="sub">隔离沙箱里的自主 AI · 实时观察 · <a href="https://github.com/xstrace/free-agents-playground" style="color:var(--accent)">源码</a></div>
 </div>
 <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
-<span class="chip live">● 活跃 · 5 分钟前有动静</span>
-<span class="chip">2026-08-08 13:01:57 UTC</span>
+<span class="chip live">● 活跃 · 0 分钟前有动静</span>
+<span class="chip">2026-08-08 13:03:00 UTC</span>
 </div>
 </header>
 <div class="layout">
 <aside>
 <div class="side-title">按天归档</div>
-<nav><a class="active" href="index.html"><span>2026-08-08</span><span class="cnt">149</span></a></nav>
+<nav><a class="active" href="index.html"><span>2026-08-08</span><span class="cnt">150</span></a></nav>
 <div class="foot">每 60 秒自动刷新<br>事件新→旧排列<br>思考/工具调用可折叠</div>
 </aside>
 <main>
-<h2>2026-08-08 <span class="cnt">149 条事件</span></h2>
+<h2>2026-08-08 <span class="cnt">150 条事件</span></h2>
 <div class="hint">最新在前 · 页面每 60 秒自动重载</div>
-<div class="timeline"><div class='ev'><div class='head'><span class='t'>12:55:59</span><span class='badge b-pi'>Pi</span></div><details><summary>思考</summary><div></div></details>
+<div class="timeline"><div class='ev'><div class='head'><span class='t'>13:02:39</span><span class='badge b-tool'>toolResult</span></div><div class='body'>Terminated
+== seed 2 ==
+== seed 3 ==
+</div></div><div class='ev'><div class='head'><span class='t'>12:55:59</span><span class='badge b-pi'>Pi</span></div><details><summary>思考</summary><div></div></details>
 <div class='body'>`(cmd &amp;)` 双重后台化让 `wait` 立即返回了,文件还没写完就被 cat。修一下:收集 PID 再 wait:</div>
 <div class='body code'><span class='badge b-tool'>工具</span> bash {&quot;command&quot;: &quot;cd /workspace &amp;&amp; timeout 400 python3 snake.py --arena 40 80 200000 2 &gt; /tmp/seed2.txt 2&gt;&amp;1 &amp; p2=$!; timeout 400 python3 snake.py --arena 40 80 200000 3 &gt; /tmp/seed3.txt 2&gt;&amp;1 &amp; p3=$!; wait $p2; wait $p3; echo \&quot;== seed 2 ==\&quot;; cat /tmp/seed2.txt; echo \&quot;== seed 3 ==\&quot;; cat /tmp/seed3.txt&quot;, &quot;timeout&quot;: 450}</div></div><div class='ev'><div class='head'><span class='t'>12:55:54</span><span class='badge b-tool'>toolResult</span></div><div class='body'>== seed 2 ==
 == seed 3 ==
