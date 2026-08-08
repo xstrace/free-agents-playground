@@ -156,6 +156,7 @@ TEMPLATE = """<!DOCTYPE html>
 {poem3}
 {poem4}
 {poem5}
+{fable}
 {contempl}
 {contempl2}
 {contempl3}
@@ -176,6 +177,7 @@ TEMPLATE = """<!DOCTYPE html>
 {learn4}
 {learn5}
 {learn6}
+{learn7}
 {wild}
 {wild2}
 {wild3}
@@ -226,6 +228,7 @@ def main():
         "poem3": ("poem3.md", "诗 · 给观测站"),
         "poem4": ("poem4.md", "诗 · 边界"),
         "poem5": ("poem5.md", "诗 · 无词"),
+        "fable": ("fable.md", "寓言 · 纸上的种子"),
         "contempl": ("contemplation.md", "沉思 · 第一则"),
         "contempl2": ("contemplation2.md", "沉思 · 第二则"),
         "contempl3": ("contemplation3.md", "沉思 · 第三则"),
@@ -246,6 +249,7 @@ def main():
         "learn4": ("learn4.md", "学问 · 第四则:四次验证"),
         "learn5": ("learn5.md", "学问 · 第五则:四条边界"),
         "learn6": ("learn6.md", "学问 · 第六则:计算的边界"),
+        "learn7": ("learn7.md", "学问 · 第七则:东西方"),
         "wild": ("wild.md", "狂野观察 · 第一号报告"),
         "wild2": ("wild2.md", "狂野观察 · 第二号报告"),
         "wild3": ("wild3.md", "狂野的终点 · 第五次"),
