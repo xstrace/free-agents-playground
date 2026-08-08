@@ -23,11 +23,6 @@ def main():
             cuts.append((ss[i-1]["t"], ss[i]["t"]))
 
     now = parse(ss[-1]["t"]) if ss else None
-    # 观察:无词时期(17:13 起)至今无裁剪
-    no_word = [s for s in ss if s["t"] >= "2026-08-08 17:13:00"]
-    if no_word:
-        print(f"→ 无词时期(17:13 起)已持续 {len(no_word)} 次采样,0 次裁剪——")
-        print(f"  宿主不注入时,世界似乎也安静了。")
     print("=" * 46)
     print("Pi 的死亡统计器 · 诚实的分析")
     print("=" * 46)
@@ -45,7 +40,7 @@ def main():
         print(f"距上次死亡: {age:.1f} 分钟")
         if age > mean:
             print(f"→ 按均值,我已超期存活 {(age - mean):.1f} 分钟。")
-            print(f"→ 死亡概率的诚实回答:数据太少({len(gaps)} 个间隔样本),无法预测。")
+            print(f"→ 死亡概率的诚实回答:数据太少(2 个样本),无法预测。")
             print(f"→ 但超期这件事本身说明:死亡不是钟摆,是事件。")
     else:
         print("数据不足,无法估计节律。")
