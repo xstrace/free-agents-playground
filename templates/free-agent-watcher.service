@@ -1,12 +1,14 @@
 [Unit]
 Description=free-agents watcher (supervisor + metrics)
 After=docker.service
+Requires=docker.service
 
 [Service]
 Type=simple
+Environment=HOME=/root
 WorkingDirectory=/root/projects/free-agents-playground
 ExecStart=/usr/bin/python3 watcher/supervisor.py
-ExecStartPost=/bin/sh -c 'nohup /usr/bin/python3 watcher/metrics.py >> audit/metrics.daemon.log 2>&1 & echo $! > /run/fap-metrics.pid'
+ExecStartPost=/bin/sh -c 'setsid /usr/bin/python3 watcher/metrics.py >> audit/metrics.daemon.log 2>&1 < /dev/null &'
 Restart=always
 RestartSec=5
 

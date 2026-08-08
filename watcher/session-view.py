@@ -57,7 +57,8 @@ def render(line):
         r = json.loads(line)
     except json.JSONDecodeError:
         return None
-    ts = r.get("ts", "")[11:19]
+    raw_ts = r.get("timestamp") or r.get("ts") or ""
+    ts = raw_ts[11:19] if len(raw_ts) > 19 else raw_ts
     t = r.get("type")
     if t == "message":
         m = r.get("message", {})

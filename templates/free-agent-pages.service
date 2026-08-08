@@ -1,0 +1,15 @@
+[Unit]
+Description=free-agents pages renderer (GitHub Pages 分钟级更新)
+After=docker.service free-agent-watcher.service
+Requires=docker.service
+
+[Service]
+Type=simple
+Environment=HOME=/root
+WorkingDirectory=/root/projects/free-agents-playground
+ExecStart=/usr/bin/python3 watcher/pages.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

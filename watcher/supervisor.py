@@ -16,6 +16,7 @@
 """
 import json
 import os
+import random
 import subprocess
 import sys
 import time
@@ -27,10 +28,11 @@ PROMPTS = os.path.join(ROOT, "agent", "prompts")
 os.makedirs(AUDIT, exist_ok=True)
 
 TICK = 5
-LOOP_INTERVAL_SEC = int(os.environ.get("LOOP_INTERVAL_SEC", "300"))
-IDLE_DONE_SEC = int(os.environ.get("IDLE_DONE_SEC", "120"))
+LOOP_INTERVAL_SEC = int(os.environ.get("LOOP_INTERVAL_SEC", "60"))
+IDLE_DONE_SEC = int(os.environ.get("IDLE_DONE_SEC", "45"))
 HEARTBEAT = "/workspace/.heartbeat"
 SEED_MARKER = "/workspace/.seeded"
+HEARTBEAT_PROMPTS = ["heartbeat.md", "heartbeat-wild.md", "heartbeat-quiet.md"]
 
 STATE_FILE = os.path.join(AUDIT, "last_inject.ts")
 LOG_FILE = os.path.join(AUDIT, "supervisor.jsonl")
@@ -202,7 +204,8 @@ def main():
                 idle = (t - hb) if hb else 9999
                 if idle > IDLE_DONE_SEC and t - last_inject() > LOOP_INTERVAL_SEC:
                     log("idle_detect", idle_sec=int(idle), action="inject_heartbeat")
-                    inject(render("heartbeat.md", TIMESTAMP=now_iso()))
+                    tpl = random.choice(HEARTBEAT_PROMPTS)
+                    inject(render(tpl, TIMESTAMP=now_iso()))
 
             # 每小时备份 memory
             if t - last_snapshot > 3600:

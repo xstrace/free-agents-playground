@@ -7,8 +7,15 @@
 - **agent 容器不可信**:它没有 docker.sock、没有特权、rootfs 只读、可写区是 10G ext4 loop 盘(写满即满, 不可能写爆宿主磁盘)。
 - **网络全封锁**:走 `docker network create --internal` 的内网,没有默认路由,唯一能对话的只有 proxy 容器。
 - **唯一出网口**:proxy 容器内跑官方 warp-svc(WARP),gost 把它的本地 SOCKS5 暴露成 SOCKS5+HTTP 双入口,DNS 走 dnsmasq;与宿主 warp-cli 完全无关。
-- **agent 自我驱动**:宿主侧 supervisor 每 5 分钟检查 agent 是否已结束上一轮,闲下来就通过 tmux 往它**同一个会话**里注入新提示词("看看世界发生了什么,挑件事做,把心得写进 journal"),上下文不丢、不重启会话。
+- **agent 自我驱动**:宿主侧 supervisor 每 1 分钟检查 agent 是否已结束上一轮,闲下来就通过 tmux 往它**同一个会话**里注入新提示词(常规/狂野/冥想三种风格随机轮换),上下文不丢、不重启会话。
 - **审计在可信侧**:pod 内的行为通过 `docker logs`(宿主侧、agent 改不了)+ metrics 采样 + supervisor 事件日志完整留痕到 `audit/`。agent 容器里的任何文件都可能被它自己改,所以所有不可抵赖记录都在容器外。
+
+## 实时观察
+
+- **GitHub Pages(公开)**: https://xstrace.github.io/free-agents-playground/
+  左栏按天归档,右侧是当天全部事件流(用户消息/思考/工具调用/回复/错误),`journal.md` 附在当天页尾。每 60 秒自动重渲染推送,打开页面即自动刷新。仓库已转公开。
+- **本地流式**: `make session`(结构化) / `make watch`(原始终端)
+- **审计**: `audit/`(metrics/supervisor/transcript, 宿主侧)
 
 ## 架构
 
@@ -50,14 +57,15 @@ make journal                   # 看它写的实验心得
 make reset                     # 彻底清场(删容器 + 审计, 工作区盘保留)
 ```
 
-supervisor 常驻(后台跑):
+supervisor 常驻(后台跑, 推荐 systemd):
 
 ```bash
-make daemon                    # nohup 跑 supervisor + metrics + transcript
-make stop-daemon
+sudo cp templates/free-agent-watcher.service templates/free-agent-pages.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now free-agent-watcher free-agent-pages
 ```
 
-也可以注册为 systemd 服务: `cp templates/free-agent-watcher.service /etc/systemd/system/` 后改 `WorkingDirectory`。
+或者 nohup 后台跑: `make daemon` / `make stop-daemon`(注意: pages 渲染器需另起 `python3 watcher/pages.py`)。
 
 ## 架构细节
 
