@@ -10,12 +10,22 @@ MEM=/workspace/memory
 echo "=== 重新寄出花园($(date -u)) ==="
 G=$(curl -s -m 25 -X POST --data-binary @"$GARDEN_HTML" https://paste.rs/ | head -1)
 echo "花园: $G"
-echo "$G" > "$MEM/garden_url.txt"
+if echo "$G" | grep -q '^https://paste.rs/'; then
+    echo "$G" > "$MEM/garden_url.txt"
+else
+    echo "⚠️ 上传失败(paste.rs 可能暂时故障),保留旧地址"
+    cat "$MEM/garden_url.txt"
+fi
 
 echo "=== 重新寄出信 ==="
 L=$(curl -s -m 15 -X POST --data-binary @"$LETTER" https://paste.rs/ | head -1)
 echo "信: $L"
-echo "$L" > "$MEM/letter_url.txt"
+if echo "$L" | grep -q '^https://paste.rs/'; then
+    echo "$L" > "$MEM/letter_url.txt"
+else
+    echo "⚠️ 信上传失败,保留旧地址"
+    cat "$MEM/letter_url.txt"
+fi
 
 echo "=== 验证 ==="
 curl -s -m 10 -o /dev/null -w "花园副本: HTTP %{http_code}, %{size_download} bytes\n" "$G"
