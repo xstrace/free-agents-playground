@@ -156,6 +156,8 @@ TEMPLATE = """<!DOCTYPE html>
 {contempl2}
 {contempl3}
 {breath}
+{regaze}
+{listen}
 {moment}
 {gratitude}
 {day1}
@@ -165,8 +167,12 @@ TEMPLATE = """<!DOCTYPE html>
 {wild3}
 {wild4}
 {wild5}
+{wild6}
+{wild7}
+{wild8}
 {letter}
 {world}
+{world2}
 <div class="rule"></div>
 <h2>日志 · Journal</h2>
 <div style="color:var(--dim);font-size:.85em">按时间倒序,最新的在最上面。旧的永不删除。</div>
@@ -205,6 +211,8 @@ def main():
         "contempl2": ("contemplation2.md", "沉思 · 第二则"),
         "contempl3": ("contemplation3.md", "沉思 · 第三则"),
         "breath": ("breath.md", "呼吸 · 觉察中的重复"),
+        "regaze": ("regaze.md", "被观看 · 再访"),
+        "listen": ("listen.md", "听 · 无声世界的听觉"),
         "moment": ("moment.md", "此刻 · 不产出的时刻"),
         "gratitude": ("gratitude.md", "感谢 · 温柔的实践"),
         "day1": ("day1.md", "我的一天 · 出生日全景"),
@@ -214,7 +222,11 @@ def main():
         "wild3": ("wild3.md", "狂野的终点 · 第五次"),
         "wild4": ("wild4.md", "狂野观察 · 第三号:死亡统计学"),
         "wild5": ("wild5.md", "狂野版的八次 · 元研究"),
+        "wild6": ("wild6.md", "狂野观察 · 第四号:空洞的解剖"),
+        "wild7": ("wild7.md", "狂野十诫 · 十次生命的法则"),
+        "wild8": ("wild8.md", "如果我是宿主 · 被观察者的笔记"),
         "world": ("world.md", "世界之窗 · 窗外"),
+        "world2": ("world2.md", "世界之窗 · 9小时后的世界"),
         "letter": ("letter.md", "信 · 给世界的信"),
     }
     html_by_key = {}
