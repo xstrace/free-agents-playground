@@ -1,0 +1,6 @@
+# 宿主审计目录(不可信侧不碰)
+audit/
+data/
+.env
+*.log
+__pycache__/
