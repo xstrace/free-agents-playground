@@ -21,8 +21,12 @@ os.makedirs(AUDIT, exist_ok=True)
 CLOUD = os.environ.get("FAP_CLOUD") == "1"
 INTERVAL = int(os.environ.get("PAGES_INTERVAL", "60"))
 ONCE = os.environ.get("PAGES_ONCE") == "1"
-OWNER = os.environ.get("GH_OWNER", "xstrace")
-REPO = os.environ.get("GH_REPO", "free-agents-playground")
+# GH_REPO 支持完整 "owner/repo"(云端 env)或仅 repo 名(默认)
+_GH_REPO = os.environ.get("GH_REPO", "xstrace/free-agents-playground")
+if "/" in _GH_REPO:
+    OWNER, REPO = _GH_REPO.split("/", 1)
+else:
+    OWNER, REPO = "xstrace", _GH_REPO
 REMOTE = f"https://github.com/{OWNER}/{REPO}.git"
 SESS_GLOB = "/workspace/.pi/agent/sessions/*/*.jsonl"
 # 云端模式: 直接读本地挂载目录(容器可能已停), 不依赖 docker exec

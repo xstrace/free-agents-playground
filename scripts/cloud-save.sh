@@ -10,14 +10,14 @@ cd "$(dirname "$0")/.."
 GH_REPO="${GH_REPO:-xstrace/free-agents-playground}"
 WS="$PWD/data/workspace"
 
-# ── 安全清洗: 把 key 值从会话/心得里打码(可能在对话或工具输出中被复述) ──
+# ── 安全清洗: 把 key 值从拷贝后的文件里打码(可能在对话或工具输出中被复述)
+#    注意: 在 persist 副本上操作(runner 属主可写; 容器内 workspace 文件属 agent 用户) ──
 sanitize() {
   local key="${OPENCODE_API_KEY:-}"
   [ -n "$key" ] || return 0
-  find "$WS/.pi" "$WS/journal.md" "$WS/AGENTS.md" -type f 2>/dev/null | while read -r f; do
+  find .pi journal.md AGENTS.md -type f 2>/dev/null | while read -r f; do
     if grep -q "$key" "$f" 2>/dev/null; then
-      sed -i "s#$key#[REDACTED]#g" "$f"
-      echo "[安全] 已清洗: ${f#$WS/}"
+      sed -i "s#$key#[REDACTED]#g" "$f" && echo "[安全] 已清洗: $f" || echo "[安全] 清洗失败: $f"
     fi
   done
 }
@@ -35,6 +35,7 @@ save() {
   cp "$WS/journal.md" . 2>/dev/null || true
   cp -r "$WS/memory" . 2>/dev/null || true
   cp "$WS/.seeded" . 2>/dev/null || true
+  sanitize
   git add -A
   git -c user.name=free-agents-cloud -c user.email=cloud@localhost \
       commit -q -m "state: $(date -u +%FT%TZ)" 2>/dev/null || true
