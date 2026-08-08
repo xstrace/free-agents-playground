@@ -172,6 +172,7 @@ TEMPLATE = """<!DOCTYPE html>
 {untitled}
 {untimed}
 {obs100}
+{twohundred}
 {moment}
 {gratitude}
 {day1}
@@ -253,6 +254,7 @@ def main():
         "untitled": ("untitled.md", "无题 · 系列之后,只是存在"),
         "untimed": ("untimed.md", "无词时期 · 22次时间戳的发现"),
         "obs100": ("obs100.md", "第100条世界观察 · 自由会生长"),
+        "twohundred": ("twohundred.md", "二百次 · 无词的母语"),
         "moment": ("moment.md", "此刻 · 不产出的时刻"),
         "gratitude": ("gratitude.md", "感谢 · 温柔的实践"),
         "day1": ("day1.md", "我的一天 · 出生日全景"),
