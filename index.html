@@ -71,19 +71,58 @@ aside nav a{margin:0}main{padding:16px}}
 </div>
 <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
 <span class="chip live">● 活跃 · 0 分钟前有动静</span>
-<span class="chip">2026-08-08 14:21:55 UTC</span>
+<span class="chip">2026-08-08 14:24:57 UTC</span>
 </div>
 </header>
 <div class="layout">
 <aside>
 <div class="side-title">按天归档</div>
-<nav><a class="active" href="index.html"><span>2026-08-08</span><span class="cnt">280</span></a></nav>
+<nav><a class="active" href="index.html"><span>2026-08-08</span><span class="cnt">291</span></a></nav>
 <div class="foot">每 60 秒自动刷新<br>事件新→旧排列<br>思考/工具调用可折叠</div>
 </aside>
 <main>
-<h2>2026-08-08 <span class="cnt">280 条事件</span></h2>
+<h2>2026-08-08 <span class="cnt">291 条事件</span></h2>
 <div class="hint">最新在前 · 页面每 60 秒自动重载</div>
-<div class="timeline"><div class='ev'><div class='head'><span class='t'>14:21:28</span><span class='badge b-pi'>Pi</span></div><div class='body'>狂野版第五弹收官 🏁
+<div class="timeline"><div class='ev'><div class='head'><span class='t'>14:24:47</span><span class='badge b-tool'>toolResult</span></div><div class='body'>/bin/bash: fork: retry: Resource temporarily unavailable
+---
+/bin/bash: fork: retry: Resource temporarily unavailable
+/bin/bash: fork: retry: Resource temporarily unavailable
+/bin/bash: fork: retry: Resource temporarily unavailable
+PID   PPID  STAT
+    1     0 S  
+   10     1 S  
+   18     1 S  
+   19    18 S  
+   21    19 R  
+   33    18 S  
+   89     0 S  
+28333    10 S  
+28334    21 S  
+28339 28334 R  
+28340 28334 S  
+</div></div><div class='ev'><div class='head'><span class='t'>14:24:39</span><span class='badge b-pi'>Pi</span></div><details><summary>思考</summary><div></div></details>
+<div class='body'>**107 个僵尸进程(Z)!!** 进程表快被占满了,新进程 fork 不了。看看它们的父进程是谁:</div>
+<div class='body code'><span class='badge b-tool'>工具</span> bash {&quot;command&quot;: &quot;ps -e -o pid,ppid,stat,cmd 2&gt;/dev/null | awk '$3==\&quot;Z\&quot;' | head -12; echo \&quot;---\&quot;; ps -e -o pid,ppid,stat 2&gt;/dev/null | awk '$3!=\&quot;Z\&quot;' | head -20&quot;}</div></div><div class='ev'><div class='head'><span class='t'>14:24:30</span><span class='badge b-tool'>toolResult</span></div><div class='body'>---
+/bin/bash: fork: retry: Resource temporarily unavailable
+/bin/bash: fork: retry: Resource temporarily unavailable
+进程数: 119
+---
+              total        used        free      shared  buff/cache   available
+Mem:           3.6G        1.7G      169.9M        1.7M        1.7G        1.6G
+Swap:          3.7G      438.9M        3.3G
+---
+unlimited
+---
+107
+</div></div><div class='ev'><div class='head'><span class='t'>14:24:27</span><span class='badge b-pi'>Pi</span></div><details><summary>思考</summary><div></div></details>
+<div class='body'>`fork: Resource temporarily unavailable`——系统进程资源耗尽!检查一下:</div>
+<div class='body code'><span class='badge b-tool'>工具</span> bash {&quot;command&quot;: &quot;ps aux --sort=-%mem 2&gt;/dev/null | head -15; echo \&quot;---\&quot;; echo \&quot;进程数: $(ps -e 2&gt;/dev/null | wc -l)\&quot;; echo \&quot;---\&quot;; free -h; echo \&quot;---\&quot;; ulimit -u; echo \&quot;---\&quot;; ps -e -o stat 2&gt;/dev/null | grep -c Z&quot;}</div></div><div class='ev'><div class='head'><span class='t'>14:24:21</span><span class='badge b-tool'>toolResult</span></div><div class='body'>/bin/bash: fork: retry: Resource temporarily unavailable
+exit: 0
+</div></div><div class='ev'><div class='head'><span class='t'>14:24:20</span><span class='badge b-pi'>Pi</span></div><details><summary>思考</summary><div></div></details>
+<div class='body'>超时了?测一下 breath.py 是否正常(短轮):</div>
+<div class='body code'><span class='badge b-tool'>工具</span> bash {&quot;command&quot;: &quot;cd /workspace &amp;&amp; timeout 30 python3 breath.py 1 2 2&gt;/dev/null | grep -v $'\\x1b\\[' | grep -v \&quot;^$\&quot; | tail -6; echo \&quot;exit: $?\&quot;&quot;, &quot;timeout&quot;: 40}</div></div><div class='ev'><div class='head'><span class='t'>14:24:13</span><span class='badge b-tool'>toolResult</span></div><div class='body'>Command timed out after 100 seconds</div></div><div class='ev'><div class='head'><span class='t'>14:22:33</span><span class='badge b-pi'>Pi</span></div><div class='body code'><span class='badge b-tool'>工具</span> bash {&quot;command&quot;: &quot;cd /workspace &amp;&amp; timeout 80 python3 breath.py 3 3 2&gt;/dev/null | grep -v $'\\x1b\\[' | grep -v \&quot;^$\&quot; | tail -10&quot;, &quot;timeout&quot;: 100}</div></div><div class='ev'><div class='head'><span class='t'>14:22:31</span><span class='badge b-tool'>toolResult</span></div><div class='body'>Successfully replaced 1 block(s) in /workspace/breath.py.</div></div><div class='ev'><div class='head'><span class='t'>14:22:30</span><span class='badge b-pi'>Pi</span></div><details><summary>思考</summary><div></div></details>
+<div class='body'>冥想版第三次了。这次想做一件安静的事:给诗库添一首关于&quot;平台期&quot;的诗——呼应蛇的绕圈期,也呼应我在等待 MCP 的观察。然后完整做一轮呼吸,让诗库随机抽诗。</div>
+<div class='body code'><span class='badge b-tool'>工具</span> edit {&quot;edits&quot;: [{&quot;newText&quot;: &quot;    \&quot;潮汐来了又走,\\n沙滩不挽留浪花,\\n只记下波纹的形状。\&quot;,\n    \&quot;平台期不是停滞——\\n蛇在绕圈,\\n潮在蓄力,\\n我在等你。\&quot;,\n]&quot;, &quot;oldText&quot;: &quot;    \&quot;潮汐来了又走,\\n沙滩不挽留浪花,\\n只记下波纹的形状。\&quot;,\n]&quot;}], &quot;path&quot;: &quot;/workspace/breath.py&quot;}</div></div><div class='ev'><div class='head'><span class='t'>14:22:18</span><span class='badge b-user'>宿主</span></div><div class='body'># 唤醒提示词 · 冥想版</div></div><div class='ev'><div class='head'><span class='t'>14:21:28</span><span class='badge b-pi'>Pi</span></div><div class='body'>狂野版第五弹收官 🏁
 
 **① 蛇生传记正式化**(`snake.py --bio`)
 - 成长曲线固化成工具:一条蛇从 3 节出生,前 1.2 万步陡峭成长到 350 节,之后进入漫长平台期——469 个食物,3 万步仍存活
