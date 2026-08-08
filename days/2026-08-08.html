@@ -71,19 +71,61 @@ aside nav a{margin:0}main{padding:16px}}
 </div>
 <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
 <span class="chip live">● 活跃 · 0 分钟前有动静</span>
-<span class="chip">2026-08-08 13:07:09 UTC</span>
+<span class="chip">2026-08-08 13:08:11 UTC</span>
 </div>
 </header>
 <div class="layout">
 <aside>
 <div class="side-title">按天归档</div>
-<nav><a class="active" href="index.html"><span>2026-08-08</span><span class="cnt">156</span></a></nav>
+<nav><a class="active" href="index.html"><span>2026-08-08</span><span class="cnt">162</span></a></nav>
 <div class="foot">每 60 秒自动刷新<br>事件新→旧排列<br>思考/工具调用可折叠</div>
 </aside>
 <main>
-<h2>2026-08-08 <span class="cnt">156 条事件</span></h2>
+<h2>2026-08-08 <span class="cnt">162 条事件</span></h2>
 <div class="hint">最新在前 · 页面每 60 秒自动重载</div>
-<div class="timeline"><div class='ev'><div class='head'><span class='t'>13:07:06</span><span class='badge b-tool'>toolResult</span></div><div class='body'>== 正确性回归(小棋盘 6 seeds) ==
+<div class="timeline"><div class='ev'><div class='head'><span class='t'>13:08:07</span><span class='badge b-tool'>toolResult</span></div><div class='body'>=== 分歧局面 ===
+head (10, 20) tail (10, 18) food (8, 20) len 3
+body==set(snake): True
+新版 bfs(food): path len 2
+旧版 bfs(food): path len 2
+  首步相同: True (9, 20) (9, 20)
+  路径相同: True
+新版 can_reach: True
+旧版 can_reach: True
+新版 bfs(尾): len None 首步 None
+旧版 bfs(尾): len 4 首步 (11, 20)
+</div></div><div class='ev'><div class='head'><span class='t'>13:08:06</span><span class='badge b-pi'>Pi</span></div><details><summary>思考</summary><div></div></details>
+<div class='body'>分歧点在 1157 步:两个方向都合法,但旧版走&quot;追食物&quot;,新版却落到了&quot;追尾巴&quot;。同一个局面、同一个 seed,`bfs_full` 输入相同(已验证 body==set(snake)),结果却不同?逐步拆解两个版本在分歧局面的每个分支返回值:</div>
+<div class='body code'><span class='badge b-tool'>工具</span> bash {&quot;command&quot;: &quot;cd /workspace &amp;&amp; timeout 90 python3 -c \&quot;\nimport snake, random\nfrom collections import deque\n\n# 精确复刻旧版 bfs_full 与 can_reach\ndef old_bfs_full(snake, target, h, w, ignore_tail=False):\n    head = snake[0]; body = set(snake)\n    if ignore_tail and len(snake) &gt; 1: body.discard(snake[-1])\n    parent = {head: None}; q = deque([head])\n    while q:\n        cur = q.popleft()\n        if cur == target:\n            path = []\n            while cur != head: path.append(cur); cur = parent[cur]\n            return path[::-1]\n        for dy, dx in ((0,1),(0,-1),(1,0),(-1,0)):\n            nxt = (cur[0]+dy, cur[1]+dx)\n            if (1 &lt;= nxt[0] &lt; h-1 and 1 &lt;= nxt[1] &lt; w-1 and nxt not in body and nxt not in parent):\n                parent[nxt] = cur; q.append(nxt)\n    return None\n\ndef old_can_reach(start, goal, body, h, w):\n    if start == goal: return True\n    seen = {start}; q = deque([start])\n    while q:\n        cur = q.popleft()\n        for dy, dx in ((0,1),(0,-1),(1,0),(-1,0)):\n            nxt = (cur[0]+dy, cur[1]+dx)\n            if nxt == goal: return True\n            if (1 &lt;= nxt[0] &lt; h-1 and 1 &lt;= nxt[1] &lt; w-1 and nxt not in body and nxt not in seen):\n                seen.add(nxt); q.append(nxt)\n    return False\n\nrandom.seed(4)\nh, w = 20, 40\nsnk = [(h//2, w//2), (h//2, w//2-1), (h//2, w//2-2)]\nfood = None; eaten = 0; body = set(snk)\nfor step_n in range(200000):\n    if food is None or food in snk:\n        while True:\n            food = (random.randint(1,h-2), random.randint(1,w-2))\n            if food not in snk: break\n    new_d = snake.ai_dir(snk, food, h, w, body=body)\n    old_d = old_ai_dir(snk, food, h, w) if 'old_ai_dir' in dir() else None\n    if new_d != old_d:\n        print('=== 分歧局面 ===')\n        print('head', snk[0], 'tail', snk[-1], 'food', food, 'len', len(snk))\n        print('body==set(snake):', body == set(snk))\n        # 新版分支1\n        p_new = snake.bfs_full(snk, food, h, w, body=body)\n        p_old = old_bfs_full(snk, food, h, w)\n        print('新版 bfs(food):', 'path len', len(p_new) if p_new else None)\n        print('旧版 bfs(food):', 'path len', len(p_old) if p_old else None)\n        if p_new and p_old:\n            print('  首步相同:', p_new[0] == p_old[0], p_new[0], p_old[0])\n            print('  路径相同:', p_new == p_old)\n        # 逃生检查\n        if p_new:\n            sim = snk[:]\n            for pp in p_new:\n                sim = [pp] + sim\n                if pp == food: break\n                sim = sim[:-1]\n            print('新版 can_reach:', snake.can_reach(sim[0], sim[-1], set(sim), h, w))\n        if p_old:\n            sim = snk[:]\n            for pp in p_old:\n                sim = [pp] + sim\n                if pp == food: break\n                sim = sim[:-1]\n            print('旧版 can_reach:', old_can_reach(sim[0], sim[-1], set(sim), h, w))\n        # 分支2\n        t_new = snake.bfs_full(snk, snk[-1], h, w, ignore_tail=True, body=body)\n        t_old = old_bfs_full(snk, snk[-1], h, w, ignore_tail=True)\n        print('新版 bfs(尾):', 'len', len(t_new) if t_new else None, '首步', t_new[0] if t_new else None)\n        print('旧版 bfs(尾):', 'len', len(t_old) if t_old else None, '首步', t_old[0] if t_old else None)\n        break\n    snk2, got = snake.step(snk, food, h, w, eaten, body=body)\n    if snk2 is None: print('都死', step_n); break\n    if got: eaten += 1; body.add(snk2[0])\n    else: body.add(snk2[0]); body.discard(snk[-1])\n    snk = snk2\n\&quot; 2&gt;&amp;1 | head -30&quot;, &quot;timeout&quot;: 120}</div></div><div class='ev'><div class='head'><span class='t'>13:07:45</span><span class='badge b-tool'>toolResult</span></div><div class='body'>第 1157 步决策分歧: 新版 (0, 1) vs 旧版 (-1, 0)
+蛇长 67 head (18, 33) food (17, 19)
+########################################
+#  ooooooooo                           #
+#  ooooooooo                           #
+#  oo                                  #
+#  oo                                  #
+#  oo                                  #
+#  o                                   #
+#  o                                   #
+#  oooooooooooooooooooooooooooooo      #
+#                               o      #
+#                               o      #
+#                               o      #
+#                               o      #
+#                               o      #
+#                               o      #
+#                               o      #
+#                               o      #
+#                  F            o      #
+#                               oH     #
+########################################
+</div></div><div class='ev'><div class='head'><span class='t'>13:07:43</span><span class='badge b-pi'>Pi</span></div><details><summary>思考</summary><div></div></details>
+<div class='body'>body 与蛇身完全一致,head 在右下角 (18,38) 被堵死——没有失步。那一定是 AI 决策本身变了。写个对照脚本:每一步同时跑新旧两版 `ai_dir`,找出第一个决策分歧点:</div>
+<div class='body code'><span class='badge b-tool'>工具</span> bash {&quot;command&quot;: &quot;cd /workspace &amp;&amp; timeout 90 python3 -c \&quot;\nimport snake, random\nfrom collections import deque\n\n# 旧版 ai_dir(优化前逻辑)\ndef old_bfs_full(snake, target, h, w, ignore_tail=False):\n    head = snake[0]\n    body = set(snake)\n    if ignore_tail and len(snake) &gt; 1:\n        body.discard(snake[-1])\n    parent = {head: None}\n    q = deque([head])\n    while q:\n        cur = q.popleft()\n        if cur == target:\n            path = []\n            while cur != head:\n                path.append(cur); cur = parent[cur]\n            return path[::-1]\n        for dy, dx in ((0,1),(0,-1),(1,0),(-1,0)):\n            nxt = (cur[0]+dy, cur[1]+dx)\n            if (1 &lt;= nxt[0] &lt; h-1 and 1 &lt;= nxt[1] &lt; w-1 and nxt not in body and nxt not in parent):\n                parent[nxt] = cur; q.append(nxt)\n    return None\n\ndef old_can_reach(start, goal, body, h, w):\n    if start == goal: return True\n    seen = {start}; q = deque([start])\n    while q:\n        cur = q.popleft()\n        for dy, dx in ((0,1),(0,-1),(1,0),(-1,0)):\n            nxt = (cur[0]+dy, cur[1]+dx)\n            if nxt == goal: return True\n            if (1 &lt;= nxt[0] &lt; h-1 and 1 &lt;= nxt[1] &lt; w-1 and nxt not in body and nxt not in seen):\n                seen.add(nxt); q.append(nxt)\n    return False\n\ndef old_ai_dir(snake, food, h, w):\n    head = snake[0]\n    path = old_bfs_full(snake, food, h, w)\n    if path:\n        sim = snake[:]\n        for p in path:\n            sim = [p] + sim\n            if p == food: break\n            sim = sim[:-1]\n        if old_can_reach(sim[0], sim[-1], set(sim), h, w):\n            return (path[0][0]-head[0], path[0][1]-head[1])\n    path = old_bfs_full(snake, snake[-1], h, w, ignore_tail=True)\n    if path:\n        return (path[0][0]-head[0], path[0][1]-head[1])\n    for dy, dx in ((0,1),(0,-1),(1,0),(-1,0)):\n        nxt = (head[0]+dy, head[1]+dx)\n        if 1 &lt;= nxt[0] &lt; h-1 and 1 &lt;= nxt[1] &lt; w-1 and nxt not in snake:\n            return (dy, dx)\n    return (0,0)\n\nrandom.seed(4)\nh, w = 20, 40\nsnk = [(h//2, w//2), (h//2, w//2-1), (h//2, w//2-2)]\nfood = None; eaten = 0; body = set(snk)\nfor step_n in range(200000):\n    if food is None or food in snk:\n        while True:\n            food = (random.randint(1,h-2), random.randint(1,w-2))\n            if food not in snk: break\n    new_d = snake.ai_dir(snk, food, h, w, body=body)\n    old_d = old_ai_dir(snk, food, h, w)\n    if new_d != old_d:\n        print(f'第 {step_n} 步决策分歧: 新版 {new_d} vs 旧版 {old_d}')\n        print('蛇长', len(snk), 'head', snk[0], 'food', food)\n        grid = [[' ']*w for _ in range(h)]\n        for y in range(h): grid[y][0]=grid[y][w-1]='#'\n        for x in range(w): grid[0][x]=grid[h-1][x]='#'\n        for i,(y,x) in enumerate(snk): grid[y][x]='o' if i else 'H'\n        grid[food[0]][food[1]]='F'\n        for row in grid: print(''.join(row))\n        break\n    snk2, got = snake.step(snk, food, h, w, eaten, body=body)\n    if snk2 is None: print('都死了, 步', step_n); break\n    if got: eaten += 1; body.add(snk2[0])\n    else: body.add(snk2[0]); body.discard(snk[-1])\n    snk = snk2\nelse:\n    print('20 万步内新旧决策完全一致, 吃到', eaten)\n\&quot;&quot;, &quot;timeout&quot;: 120}</div></div><div class='ev'><div class='head'><span class='t'>13:07:25</span><span class='badge b-tool'>toolResult</span></div><div class='body'>第 1828 步死亡, 已吃 88
+body != set(snake)? False
+head: (18, 38) food: (3, 18)
+</div></div><div class='ev'><div class='head'><span class='t'>13:07:24</span><span class='badge b-pi'>Pi</span></div><details><summary>思考</summary><div></div></details>
+<div class='body'>出问题了:seed 4/5 撞死(之前全活),seed 1 超时。优化引入了 bug。加断言检查 body 集合与蛇身的一致性,定位在哪一步失步:</div>
+<div class='body code'><span class='badge b-tool'>工具</span> bash {&quot;command&quot;: &quot;cd /workspace &amp;&amp; timeout 60 python3 -c \&quot;\nimport snake, random\nrandom.seed(4)\nh, w = 20, 40\nsnk = [(h//2, w//2), (h//2, w//2-1), (h//2, w//2-2)]\nfood = None\neaten = 0\nbody = set(snk)\nfor step_n in range(200000):\n    if food is None or food in snk:\n        while True:\n            food = (random.randint(1,h-2), random.randint(1,w-2))\n            if food not in snk: break\n    snk2, got = snake.step(snk, food, h, w, eaten, body=body)\n    if snk2 is None:\n        print(f'第 {step_n} 步死亡, 已吃 {eaten}')\n        print('body != set(snake)?', body != set(snk))\n        print('head:', snk[0], 'food:', food)\n        break\n    if got:\n        eaten += 1\n        body.add(snk2[0])\n    else:\n        body.add(snk2[0]); body.discard(snk[-1])\n    snk = snk2\n    if body != set(snk):\n        print(f'第 {step_n} 步失步! body 大小 {len(body)}, set(snake) 大小 {len(set(snk))}')\n        break\nelse:\n    print('跑完 20 万步没死, 无失步, 吃到', eaten)\n\&quot;&quot;, &quot;timeout&quot;: 120}</div></div><div class='ev'><div class='head'><span class='t'>13:07:06</span><span class='badge b-tool'>toolResult</span></div><div class='body'>== 正确性回归(小棋盘 6 seeds) ==
 Terminated
 seed=2: 吃到 315, 存活
 seed=3: 吃到 206, 存活
