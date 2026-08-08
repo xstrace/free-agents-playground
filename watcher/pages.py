@@ -89,6 +89,20 @@ border-radius:10px}
 .b-err{background:#ff6b6b1f;color:var(--err)}
 .ev .body{white-space:pre-wrap;word-break:break-word;color:#dbe2ec}
 .ev .body .code{font-family:ui-monospace,SFMono-Regular,monospace;font-size:12.5px;color:#c9d4e5}
+.ev .body.md p{margin:4px 0}
+.ev .body.md ul,.ev .body.md ol{margin:6px 0 6px 20px}
+.ev .body.md li{margin:2px 0}
+.ev .body.md pre{background:#0a0e16;border:1px solid var(--border);border-radius:6px;
+padding:10px;overflow-x:auto;font:12px/1.6 ui-monospace,monospace;margin:6px 0;color:#c9d4e5}
+.ev .body.md code{background:var(--panel2);border-radius:4px;padding:0 5px;
+font:12px ui-monospace,monospace;color:#e3b341}
+.ev .body.md pre code{background:none;padding:0;color:inherit}
+.ev .body.md blockquote{margin:6px 0;padding:4px 10px;border-left:2px solid var(--tool);
+color:#b9c3d4}
+.cmd{font-family:ui-monospace,SFMono-Regular,monospace;font-size:12.5px;background:#0a0e16;
+border:1px solid var(--border);border-left:3px solid var(--tool);border-radius:6px;
+padding:7px 10px;margin-top:4px;white-space:pre-wrap;word-break:break-all;color:#d8e0ee}
+.cmd .prompt{color:var(--tool)}
 details{margin-top:4px}
 details summary{cursor:pointer;color:var(--think);font-size:12px;user-select:none;list-style:none}
 details summary::before{content:"▸ ";color:var(--think)}
@@ -98,6 +112,12 @@ background:var(--panel2);border-left:2px solid var(--border);border-radius:6px;
 white-space:pre-wrap;word-break:break-word}
 .journal-page{margin-top:0}
 .journal-page h2{font-size:16px;margin-bottom:14px}
+.art{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--border);
+border-radius:10px;padding:12px 16px;margin-bottom:8px}
+.art a{color:var(--accent);text-decoration:none;font-size:14px}
+.art a:hover{text-decoration:underline}
+.art .cnt{color:var(--dim);font-size:12px;margin-left:auto}
+.art-ic{font-size:16px}
 .md{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:24px 28px;
 line-height:1.75;color:#d5dce8;font-size:14.5px}
 .md h1,.md h2,.md h3,.md h4{color:var(--pi);margin:22px 0 10px;line-height:1.4}
@@ -131,8 +151,14 @@ def inline_md(s):
     return s
 
 
-def render_markdown(text):
-    """零依赖轻量 markdown → HTML(标题/列表/引用/代码块/段落/分隔线)"""
+def render_markdown(text, compact=False):
+    """零依赖轻量 markdown → HTML(标题/列表/引用/代码块/段落/分隔线)
+    compact: 事件流内使用, 标题降级为加粗避免大标题"""
+    def head(level, content):
+        if compact:
+            return f"<p><b>{content}</b></p>"
+        return f"<h{level}>{content}</h{level}>"
+
     lines = text.split("\n")
     out, i, in_code, code_buf = [], 0, False, []
     while i < len(lines):
@@ -155,7 +181,7 @@ def render_markdown(text):
             continue
         m = re.match(r"^(#{1,4})\s+(.*)$", s)
         if m:
-            out.append(f"<h{len(m.group(1))}>{inline_md(m.group(2))}</h{len(m.group(1))}>")
+            out.append(head(len(m.group(1)), inline_md(m.group(2))))
             i += 1
             continue
         if re.match(r"^[-*]\s+", s):
@@ -245,7 +271,7 @@ def esc(s):
 
 def render_blocks(content):
     if isinstance(content, str):
-        return f"<div class='body'>{esc(content)}</div>"
+        return f"<div class='body md'>{render_markdown(content, compact=True)}</div>"
     if not isinstance(content, list):
         return f"<div class='body'>{esc(content)}</div>"
     parts = []
@@ -255,15 +281,40 @@ def render_blocks(content):
             continue
         t = b.get("type", "")
         if t == "text":
-            parts.append(f"<div class='body'>{esc(b.get('text', ''))}</div>")
+            parts.append(f"<div class='body md'>{render_markdown(b.get('text', ''), compact=True)}</div>")
         elif t in ("thinking", "reasoning"):
             parts.append(f"<details><summary>思考</summary><div>{esc(b.get('text', ''))}</div></details>")
         elif t == "toolCall":
-            args = json.dumps(b.get("arguments", b.get("args", {})), ensure_ascii=False)
             name = b.get("name", b.get("toolName", "?"))
-            parts.append(f"<div class='body code'><span class='badge b-tool'>工具</span> {esc(name)} {esc(args)}</div>")
+            args = b.get("arguments", b.get("args", {}))
+            if isinstance(args, str):
+                try:
+                    args = json.loads(args)
+                except Exception:
+                    args = {"raw": args}
+            if not isinstance(args, dict):
+                args = {"raw": str(args)}
+            # bash: 展示实际执行的命令(看得见访问了什么/搜了什么)
+            if name == "bash" and args.get("command"):
+                cmd = str(args["command"]).strip()
+                shown = cmd if len(cmd) <= 500 else cmd[:497] + "..."
+                parts.append(f'<div class="cmd"><span class="badge b-tool">bash</span>'
+                             f'<span class="prompt">$ </span>{esc(shown)}</div>')
+            else:
+                # 其他工具: 高亮关键参数(路径/URL/搜索词/模式)
+                keys = ("path", "file", "url", "query", "pattern", "dir", "filename", "name")
+                summ = {k: str(args[k])[:120] for k in keys if k in args}
+                extra = json.dumps(summ, ensure_ascii=False) if summ else json.dumps(args, ensure_ascii=False)
+                if len(extra) > 200:
+                    extra = extra[:197] + "..."
+                parts.append(f'<div class="body code"><span class="badge b-tool">{esc(name)}</span> {esc(extra)}</div>')
         elif t == "toolResult":
-            data = str(b.get("data", ""))[:800]
+            data = b.get("data", "")
+            if isinstance(data, (dict, list)):
+                data = json.dumps(data, ensure_ascii=False, indent=1)
+            data = str(data)
+            if len(data) > 800:
+                data = data[:797] + "..."
             parts.append(f"<div class='body code'><span class='badge b-tool'>结果</span> {esc(data)}</div>")
         else:
             parts.append(f"<div class='body'>{esc(str(b)[:300])}</div>")
@@ -300,11 +351,13 @@ def day_of(ts):
     return (ts or "")[:10]
 
 
-def layout(title, days, current_day, body, journal_active=False):
-    """共享骨架: header + 侧栏(日记入口 + 按天归档) + main"""
+def layout(title, days, current_day, body, journal_active=False, artifacts_active=False):
+    """共享骨架: header + 侧栏(日记/作品入口 + 按天归档) + main"""
     nav = []
     jcls = ' class="active"' if journal_active else ""
     nav.append(f'<a{jcls} href="journal.html"><span>📓 日记</span><span class="cnt">journal</span></a>')
+    acls = ' class="active"' if artifacts_active else ""
+    nav.append(f'<a{acls} href="artifacts.html"><span>📦 作品</span><span class="cnt">files</span></a>')
     nav.append('<div class="side-title" style="margin-top:14px">按天归档(过程)</div>')
     for d in days:
         cls = ' class="active"' if (d == current_day and not journal_active) else ""
@@ -372,6 +425,100 @@ def journal_body(journal):
 </div>"""
 
 
+# ── 作品集: agent 在 workspace 创作的文件 ─────────────────────────
+ARTIFACT_EXCLUDE = {".pi", ".heartbeat", ".seeded", "agent.log", "memory",
+                    "lost+found", "__pycache__", ".git"}
+TEXT_EXTS = (".md", ".py", ".sh", ".json", ".txt", ".ts", ".yml", ".yaml",
+             ".log", ".toml", ".conf", ".html", ".css")
+IMG_EXTS = (".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg")
+
+
+def artifact_files(ws):
+    """返回 [(name, size, kind)], kind: md/code/img/text/bin"""
+    if not os.path.isdir(ws):
+        return []
+    items = []
+    for name in sorted(os.listdir(ws)):
+        if name in ARTIFACT_EXCLUDE:
+            continue
+        p = os.path.join(ws, name)
+        if not os.path.isfile(p):
+            continue
+        size = os.path.getsize(p)
+        low = name.lower()
+        if low.endswith(".md"):
+            kind = "md"
+        elif low.endswith(IMG_EXTS):
+            kind = "img"
+        elif low.endswith(TEXT_EXTS):
+            kind = "code"
+        else:
+            kind = "bin"
+        items.append((name, size, kind))
+    return items
+
+
+def artifacts_page(ws, days):
+    items = artifact_files(ws)
+    if not items:
+        body = "<h2>📦 作品</h2><div class='hint'>还没有存档的作品。</div>"
+        return layout("作品", days, days[0] if days else "", body, artifacts_active=True)
+    rows = []
+    kind_label = {"md": "markdown", "img": "图片", "code": "代码", "bin": "文件"}
+    for name, size, kind in items:
+        size_s = f"{size/1024:.1f} KB" if size >= 1024 else f"{size} B"
+        icon = "🖼" if kind == "img" else ("📄" if kind == "md" else ("⚙️" if kind == "code" else "🗜"))
+        rows.append(
+            f'<div class="art"><span class="art-ic">{icon}</span>'
+            f'<a href="artifacts/{esc(name)}.html"><b>{esc(name)}</b></a>'
+            f'<span class="cnt">{kind_label[kind]} · {size_s}</span></div>')
+    body = (f"<h2>📦 作品 <span class='cnt'>{len(items)} 个文件</span></h2>"
+            f"<div class='hint'>agent 在沙箱里创作的文件 · 点击查看/下载</div>"
+            + "".join(rows))
+    return layout("作品", days, days[0] if days else "", body, artifacts_active=True)
+
+
+def artifact_view_page(name, size, kind, ws, days):
+    src = os.path.join(ws, name)
+    if kind == "img":
+        body = (f"<h2>📦 {esc(name)}</h2>"
+                f"<div class='art-view'><img src='artifacts/{esc(name)}' alt='{esc(name)}' "
+                f"style='max-width:100%;border-radius:10px'></div>")
+    elif kind == "md":
+        with open(src, errors="replace") as f:
+            md = f.read()
+        body = f"<h2>📦 {esc(name)}</h2><div class='md'>{render_markdown(md)}</div>"
+    else:
+        with open(src, errors="replace") as f:
+            txt = f.read()[:50000]
+        body = (f"<h2>📦 {esc(name)}</h2>"
+                f"<div class='hint'>原文预览(前 50KB) · <a href='artifacts/{esc(name)}'>下载原文件</a></div>"
+                f"<div class='md'><pre>{esc(txt)}</pre></div>")
+    return layout(esc(name), days, days[0] if days else "", body)
+
+
+def render_artifacts(ws, days, out):
+    """复制作品原文件到站点目录, 生成列表页与预览页"""
+    if not LOCAL_WS:
+        return
+    items = artifact_files(ws)
+    if not items:
+        return
+    art_dir = Path(PAGES_REPO) / "artifacts"
+    art_dir.mkdir(parents=True, exist_ok=True)
+    import shutil
+    for name, size, kind in items:
+        src = os.path.join(ws, name)
+        try:
+            shutil.copy2(src, art_dir / name)
+        except Exception:
+            continue
+        if kind != "bin":
+            (art_dir / f"{name}.html").write_text(
+                artifact_view_page(name, size, kind, ws, days), encoding="utf-8")
+    (Path(PAGES_REPO) / "artifacts.html").write_text(artifacts_page(ws, days), encoding="utf-8")
+
+
 def ensure_repo():
     """渲染前先准备好 gh-pages 仓库(clone 远端历史, 保证 fast-forward 推送)"""
     if os.path.isdir(os.path.join(PAGES_REPO, ".git")):
@@ -406,6 +553,7 @@ def render_site():
         layout(latest, days, latest, events_body([r for r in events if day_of(r.get("timestamp", "")) == latest], latest)))
     (out / "journal.html").write_text(
         layout("日记", days, latest, journal_body(journal), journal_active=True))
+    render_artifacts(LOCAL_WS, days, out)
     return out
 
 

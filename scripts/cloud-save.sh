@@ -30,17 +30,21 @@ save() {
     git init -q -b agent-data
     git remote add origin "https://github.com/${GH_REPO}.git"
   fi
-  rm -rf .pi journal.md memory .seeded
+  rm -rf .pi journal.md memory .seeded artifacts
   cp -r "$WS/.pi" . 2>/dev/null || true
   cp "$WS/journal.md" . 2>/dev/null || true
   cp -r "$WS/memory" . 2>/dev/null || true
   cp "$WS/.seeded" . 2>/dev/null || true
+  # 作品集: workspace 顶层创作文件(排除系统/内部文件)
+  mkdir -p artifacts
+  find "$WS" -maxdepth 1 -type f ! -name '.heartbeat' ! -name '.seeded' \
+    ! -name 'agent.log' -exec cp {} artifacts/ \; 2>/dev/null || true
   sanitize
   git add -A
   git -c user.name=free-agents-cloud -c user.email=cloud@localhost \
       commit -q -m "state: $(date -u +%FT%TZ)" 2>/dev/null || true
   GIT_TERMINAL_PROMPT=0 git push -q origin agent-data 2>&1 | tail -1 || echo "[存档] push 失败"
-  echo "[存档] agent-data 已更新"
+  echo "[存档] agent-data 已更新(含 artifacts)"
   cd ../..
 }
 
