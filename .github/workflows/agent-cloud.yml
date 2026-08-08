@@ -5,6 +5,7 @@ name: agent-cloud
 #   - 镜像从 ghcr 拉(由 build-images 预构建), 引导时间 ~1 分钟
 #   - 何时开下一班由 agent-check.yml 决定(每 15 分钟查岗: 跑完才开, 没跑完跳过)
 #   - 每班结束渲染推送 GitHub Pages(站点由云端接管)
+#   - 密钥隔离: key 只在 fap-gateway 边车容器里, agent 容器零 key, 经网关调模型
 #   - 资源: runner 是 4c/16G/14G 盘, 放开给 agent(3c/12G), 最大化利用
 on:
   workflow_dispatch:
@@ -57,12 +58,18 @@ jobs:
           if [ -f data/persist/.seeded ]; then cp data/persist/.seeded data/workspace/; fi
           echo "恢复完成: $(ls data/workspace/ 2>/dev/null | tr '\n' ' ')"
 
-      - name: 启动 agent 容器(3c/12G, runner 资源最大化)
+      - name: 启动网关 + agent 容器(key 只进网关, agent 零 key)
         run: |
           cat > data/restart-agent.sh <<'EOS'
           #!/bin/bash
-          docker rm -f fap-agent 2>/dev/null
-          docker run -d --name fap-agent \
+          docker network create fap-net 2>/dev/null
+          docker rm -f fap-gateway fap-agent 2>/dev/null
+          # 网关边车: 唯一持有模型 key, agent 经它访问模型
+          docker run -d --name fap-gateway --network fap-net \
+            -e ZEN_KEY="${OPENCODE_API_KEY:-}" \
+            --entrypoint python3 fap-agent /opt/gateway.py
+          # agent: 容器内没有任何 key 环境变量
+          docker run -d --name fap-agent --network fap-net \
             --cpus 3 --memory 12g --memory-swap 12g --pids-limit 4096 \
             --cap-drop ALL --cap-add SETUID --cap-add SETGID --cap-add CHOWN \
             --security-opt no-new-privileges \
@@ -72,16 +79,15 @@ jobs:
             --tmpfs /memory:size=128m,mode=0777 \
             -v "$(pwd)/data/workspace:/workspace" \
             -e PI_CMD="/usr/local/bin/pi -c --model opencode/deepseek-v4-flash-free" \
+            -e PI_OFFLINE=1 \
             -e PI_SKIP_VERSION_CHECK=1 \
             -e PI_TELEMETRY=0 \
-            -e OPENCODE_API_KEY="${OPENCODE_API_KEY:-}" \
-            -e OPENROUTER_API_KEY= \
             fap-agent
           EOS
           chmod +x data/restart-agent.sh
           ./data/restart-agent.sh
-          sleep 8
-          docker ps --format "{{.Names}} {{.Status}}" | grep fap-agent
+          sleep 10
+          docker ps --format "{{.Names}} {{.Status}}" | grep -E "fap"
 
       - name: 运行 supervisor(预算内持续驱动, 每 10 分钟自动存档)
         run: |
