@@ -421,7 +421,7 @@ def journal_body(journal):
 
 
 # ── 作品集: agent 在 workspace 创作的文件 ─────────────────────────
-ARTIFACT_EXCLUDE = {".pi", ".heartbeat", ".seeded", "agent.log", "memory",
+ARTIFACT_EXCLUDE = {".pi", ".heartbeat", ".seeded", "agent.log",
                     "lost+found", "__pycache__", ".git"}
 TEXT_EXTS = (".md", ".py", ".sh", ".json", ".txt", ".ts", ".yml", ".yaml",
              ".log", ".toml", ".conf", ".html", ".css")
