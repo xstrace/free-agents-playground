@@ -1,8 +1,8 @@
 <template>
-  <div v-if="events">
-    <h2 class="page-title">{{ day }} <span style="color:var(--dim);font-size:12px">{{ events.length }} 条事件</span></h2>
+  <div v-if="list">
+    <h2 class="page-title">{{ day }} <span style="color:var(--dim);font-size:12px">{{ list.length }} 条事件</span></h2>
     <div class="page-sub">最新在前 · 宿主注入已折叠</div>
-    <div v-for="(ev, i) in events" :key="i" class="ev">
+    <div v-for="(ev, i) in list" :key="i" class="ev">
       <div class="head">
         <span class="t">{{ (ev.timestamp || '').slice(11, 19) }}</span>
         <el-tag v-if="ev.type === 'error'" size="small" type="danger">错误</el-tag>
@@ -28,12 +28,14 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { fetchJson } from '../api'
 import { renderMd, esc } from '../md'
 
 const props = defineProps({ day: String, meta: Object })
 const events = ref(null)
+// 事件 JSON 为旧→新, 展示时倒序(新→旧)
+const list = computed(() => (events.value ? [...events.value].reverse() : null))
 
 watch(() => props.day, load, { immediate: true })
 onMounted(load)
