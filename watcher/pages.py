@@ -23,7 +23,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-WEB = os.path.join(ROOT, "watcher", "web")
 AUDIT = os.path.join(ROOT, "audit")
 os.makedirs(AUDIT, exist_ok=True)
 
@@ -260,11 +259,7 @@ def build_site():
     }
     (out / "data" / "meta.json").write_text(json.dumps(meta, ensure_ascii=False), encoding="utf-8")
 
-    # 壳资源
-    for f in ("index.html", "style.css", "app.js"):
-        src = os.path.join(WEB, f)
-        if os.path.exists(src):
-            shutil.copy2(src, out / f)
+    # 前端壳(index.html/assets)由 site/ 构建产物提供(gh-pages 根), 本生成器只产数据
     return out
 
 
