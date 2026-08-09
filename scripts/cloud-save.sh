@@ -35,10 +35,14 @@ save() {
   cp "$WS/journal.md" . 2>/dev/null || true
   cp -r "$WS/memory" . 2>/dev/null || true
   cp "$WS/.seeded" . 2>/dev/null || true
-  # 作品集: workspace 顶层创作文件(排除系统/内部文件)
+  # 作品集: workspace 全部创作文件(递归, 保留目录结构; 排除系统/内部目录)
   mkdir -p artifacts
-  find "$WS" -maxdepth 1 -type f ! -name '.heartbeat' ! -name '.seeded' \
-    ! -name 'agent.log' -exec cp {} artifacts/ \; 2>/dev/null || true
+  ART="$PWD/artifacts"
+  (cd "$WS" && find . -type f \
+      ! -path './.pi/*' ! -path './memory/*' ! -path './__pycache__/*' \
+      ! -name '.heartbeat' ! -name '.seeded' ! -name 'agent.log' \
+      -exec cp --parents {} "$ART/" \; 2>/dev/null) || true
+  echo "[存档] 作品 $(find "$ART" -type f 2>/dev/null | wc -l) 个文件"
   sanitize
   git add -A
   git -c user.name=free-agents-cloud -c user.email=cloud@localhost \

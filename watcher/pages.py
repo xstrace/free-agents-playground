@@ -429,28 +429,36 @@ IMG_EXTS = (".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg")
 
 
 def artifact_files(ws):
-    """返回 [(name, size, kind)], kind: md/code/img/text/bin"""
+    """返回 [(相对路径, size, kind)], 递归扫描, 排除系统/内部目录"""
     if not os.path.isdir(ws):
         return []
     items = []
-    for name in sorted(os.listdir(ws)):
-        if name in ARTIFACT_EXCLUDE:
+    for root, dirs, files in os.walk(ws):
+        rel = os.path.relpath(root, ws)
+        parts = [] if rel == "." else rel.split(os.sep)
+        if parts and parts[0] in ARTIFACT_EXCLUDE:
+            dirs[:] = []
             continue
-        p = os.path.join(ws, name)
-        if not os.path.isfile(p):
-            continue
-        size = os.path.getsize(p)
-        low = name.lower()
-        if low.endswith(".md"):
-            kind = "md"
-        elif low.endswith(IMG_EXTS):
-            kind = "img"
-        elif low.endswith(TEXT_EXTS):
-            kind = "code"
-        else:
-            kind = "bin"
-        items.append((name, size, kind))
-    return items
+        for name in sorted(files):
+            if name in {".heartbeat", ".seeded", "agent.log"}:
+                continue
+            p = os.path.join(root, name)
+            try:
+                size = os.path.getsize(p)
+            except OSError:
+                continue
+            rel_path = name if not parts else os.path.join(*parts, name)
+            low = name.lower()
+            if low.endswith(".md"):
+                kind = "md"
+            elif low.endswith(IMG_EXTS):
+                kind = "img"
+            elif low.endswith(TEXT_EXTS):
+                kind = "code"
+            else:
+                kind = "bin"
+            items.append((rel_path, size, kind))
+    return sorted(items)
 
 
 def artifacts_page(ws, days):
@@ -499,17 +507,17 @@ def render_artifacts(ws, days, out):
     items = artifact_files(ws)
     if not items:
         return
-    art_dir = Path(PAGES_REPO) / "artifacts"
-    art_dir.mkdir(parents=True, exist_ok=True)
     import shutil
     for name, size, kind in items:
         src = os.path.join(ws, name)
+        dst = Path(PAGES_REPO) / "artifacts" / name
         try:
-            shutil.copy2(src, art_dir / name)
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, dst)
         except Exception:
             continue
         if kind != "bin":
-            (art_dir / f"{name}.html").write_text(
+            (dst.parent / f"{Path(name).name}.html").write_text(
                 artifact_view_page(name, size, kind, ws, days), encoding="utf-8")
     (Path(PAGES_REPO) / "artifacts.html").write_text(artifacts_page(ws, days), encoding="utf-8")
 
