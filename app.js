@@ -143,26 +143,28 @@ function viewJournal() {
      <div class="hint">按天归档, 点击展开</div>${cards}`;
 }
 
-/* ── 视图: 作品(文件树 + 右侧渲染) ─────────────────── */
-function treeHtml(node, depth) {
+/* ── 视图: 作品(左文件树 + 右内容预览) ─────────────── */
+function treeHtml(node) {
   if (node.type === "dir") {
-    return `<details ${depth < 1 ? "open" : ""}>
-      <summary>📁 ${esc(node.name || "/")}</summary>
-      <div class="dir-children">${(node.children || []).map(c => treeHtml(c, depth + 1)).join("")}</div>
+    const n = (node.children || []).filter(c => c.type === "file").length;
+    return `<details>
+      <summary><span class="ic">📁</span><span class="nm">${esc(node.name || "/")}</span></summary>
+      <div class="dir-children">${(node.children || []).map(treeHtml).join("")}</div>
     </details>`;
   }
   const icons = { md: "📄", img: "🖼", code: "⚙️", bin: "🗜" };
   const sz = node.size >= 1024 ? (node.size / 1024).toFixed(1) + " KB" : node.size + " B";
   return `<a data-art="${esc(node.url)}" data-kind="${node.kind}" data-name="${esc(node.name)}">
-    <span>${icons[node.kind] || "🗜"} ${esc(node.name)}</span><span class="sz">${sz}</span></a>`;
+    <span class="ic">${icons[node.kind] || "🗜"}</span><span class="nm">${esc(node.name)}</span><span class="sz">${sz}</span></a>`;
 }
 async function viewArtifacts() {
   const root = META.artifacts;
-  const pane = `<div class="hint">文件树 · 点击右侧渲染(可下载原文件)</div>`;
   document.getElementById("content").innerHTML =
-    `<h2>📦 作品 <span class="cnt">${META.artCount} 个文件</span></h2>${pane}
-     <div class="tree" id="art-tree">${(root.children || []).map(c => treeHtml(c, 0)).join("")}</div>
-     <div id="art-view" style="margin-top:20px"></div>`;
+    `<h2>📦 作品 <span class="cnt">${META.artCount} 个文件 · 点击文件右侧预览</span></h2>
+     <div class="art-layout">
+       <div class="art-tree" id="art-tree">${(root.children || []).map(treeHtml).join("")}</div>
+       <div class="art-view" id="art-view"><div class="hint">← 从左侧文件树选择文件预览(可下载原文件)</div></div>
+     </div>`;
   document.querySelectorAll("#art-tree a").forEach(a => {
     a.addEventListener("click", ev => {
       ev.preventDefault();

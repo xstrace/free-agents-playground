@@ -94,18 +94,27 @@ font-size:14px;color:var(--pi);list-style:none}
 .day-card summary .d{color:var(--text)}
 .day-card summary .t{color:var(--dim);font-size:12px;font-weight:400}
 .day-card .md{border:none;border-radius:0;border-top:1px solid var(--border)}
-/* 作品树 */
-.tree{font-size:13.5px}
-.tree summary{cursor:pointer;padding:4px 8px;border-radius:6px;color:#c9d4e5;list-style:none}
+/* 作品: 左树右内容 */
+.art-layout{display:flex;gap:16px;align-items:flex-start}
+.art-tree{width:320px;flex-shrink:0;max-height:calc(100vh - 220px);overflow-y:auto;
+background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:8px}
+.art-view{flex:1;min-width:0}
+.tree{font-size:13px}
+.tree details{margin:0}
+.tree summary{display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:6px;
+cursor:pointer;color:#c9d4e5;line-height:1.5;list-style:none;user-select:none}
 .tree summary:hover{background:var(--panel2)}
-.tree summary::before{content:"▸ ";color:var(--dim)}
-.tree details[open]>summary::before{content:"▾ "}
-.tree .dir-children{margin-left:14px;border-left:1px solid var(--border);padding-left:6px}
-.tree a{display:flex;align-items:center;gap:8px;padding:4px 8px;border-radius:6px;color:var(--text);
-text-decoration:none}
+.tree summary::before{content:"▸";display:inline-block;width:12px;color:var(--dim);
+transition:transform .12s}
+.tree details[open]>summary::before{transform:rotate(90deg)}
+.tree .dir-children{margin-left:16px;padding-left:8px;border-left:1px solid var(--border)}
+.tree a{display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:6px;
+color:var(--text);text-decoration:none;line-height:1.5}
+.tree a .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.tree a .sz{color:var(--dim);font-size:10px;margin-left:auto;flex-shrink:0}
 .tree a:hover{background:var(--panel2);color:var(--accent)}
 .tree a.active{background:#4cc2ff14;border:1px solid #4cc2ff33;color:var(--accent)}
-.tree .sz{color:var(--dim);font-size:11px;margin-left:auto}
+.tree .ic{width:16px;text-align:center;flex-shrink:0}
 .art-view img{max-width:100%;border-radius:10px}
 @media(max-width:800px){.layout{flex-direction:column}aside{width:100%;height:auto;position:static;
 border-right:none;border-bottom:1px solid var(--border)}main{padding:16px}}
