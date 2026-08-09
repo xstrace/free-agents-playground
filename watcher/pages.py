@@ -163,18 +163,20 @@ def artifact_files(ws):
 
 def build_tree(ws):
     items = artifact_files(ws)
-    root = {"type": "dir", "name": "", "children": []}
+    root = {"type": "dir", "name": "", "key": "", "children": []}
     for rel, size, kind in items:
         parts = rel.split("/")
         node = root
+        cur = ""
         for p in parts[:-1]:
+            cur = cur + "/" + p if cur else p
             child = next((c for c in node["children"] if c["type"] == "dir" and c["name"] == p), None)
             if not child:
-                child = {"type": "dir", "name": p, "children": []}
+                child = {"type": "dir", "name": p, "key": cur, "children": []}
                 node["children"].append(child)
             node = child
         node["children"].append({
-            "type": "file", "name": parts[-1], "size": size, "kind": kind,
+            "type": "file", "name": parts[-1], "key": rel, "size": size, "kind": kind,
             "url": "artifacts/" + rel,
         })
     return root
