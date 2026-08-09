@@ -7,8 +7,9 @@ body {
   background: var(--bg); color: var(--text);
   font: 14px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
 }
-/* Element Plus 暗色覆盖 */
+/* Element Plus 暗色覆盖(全量, 防闪白/白底) */
 :root {
+  --el-bg-color-page: #0d1117;
   --el-bg-color: #161b22;
   --el-bg-color-overlay: #1c2129;
   --el-border-color: #30363d;
@@ -21,7 +22,15 @@ body {
   --el-text-color-regular: #c9d1d9;
   --el-text-color-secondary: #8b949e;
   --el-color-primary: #58a6ff;
+  --el-mask-color: rgba(13, 17, 23, 0.72);
+  --el-mask-color-light: rgba(13, 17, 23, 0.6);
+  --el-color-white: #e6edf3;
 }
+.el-loading-mask { background-color: rgba(13, 17, 23, 0.72); }
+.el-collapse, .el-collapse-item__header, .el-collapse-item__wrap {
+  background-color: transparent; border-bottom-color: var(--border);
+}
+.el-collapse-item__header { color: var(--text); }
 .layout { height: 100vh; }
 .header {
   display: flex; align-items: center; gap: 16px; padding: 0 22px;
@@ -86,3 +95,15 @@ body {
   background: #1c2129; border-radius: 0 8px 8px 0; color: #b9c3d4;
 }
 .md a { color: var(--accent); }
+/* 日记: 左侧日期栏 + 右侧卡片 */
+.journal-row { display: flex; gap: 16px; margin-bottom: 14px; }
+.j-date {
+  width: 58px; flex-shrink: 0; text-align: right; padding-top: 13px;
+  font-family: ui-monospace, monospace; line-height: 1.3;
+}
+.j-date .d { font-size: 15px; color: var(--text); font-weight: 600; }
+.j-date .y { font-size: 10px; color: var(--dim); }
+.j-card { flex: 1; min-width: 0; }
+.j-card .el-collapse-item__header { padding: 0 16px; height: auto; min-height: 44px; line-height: 44px; }
+.j-card .el-collapse-item__wrap { border-bottom: none; }
+.j-card .el-collapse-item__content { padding: 4px 16px 16px; }

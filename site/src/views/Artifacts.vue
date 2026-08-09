@@ -17,8 +17,9 @@
         </template>
       </el-tree>
     </div>
-    <div class="art-view" v-loading="loading">
+    <div class="art-view">
       <div v-if="!content && !imgUrl" class="page-sub">← 从左侧文件树选择文件预览(可下载原文件)</div>
+      <div v-else-if="loading" class="page-sub">加载中…</div>
       <template v-else>
         <h2 class="page-title">{{ name }} <a v-if="imgUrl || raw" :href="'artifacts/' + raw" download style="font-size:12px;color:var(--accent)">下载</a></h2>
         <img v-if="imgUrl" :src="imgUrl" :alt="name" />
