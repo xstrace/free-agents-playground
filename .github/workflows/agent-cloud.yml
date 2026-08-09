@@ -1,3 +1,95 @@
+name: agent-cloud
+# 云端 24/7 自主 agent(GitHub Actions 原生, 无代理直连出网):
+#   - 每轮一个 job(默认 ~5 小时, 上限 6h), 每 10 分钟自动存档到 agent-data + 推 Pages
+#   - 下一班启动时拉回 → pi -c 无缝续命(上下文不丢)
+#   - 镜像从 ghcr 拉(由 build-images 预构建), 引导时间 ~1 分钟
+#   - 何时开下一班由 agent-check.yml 决定(每 15 分钟查岗: 跑完才开, 没跑完跳过)
+#   - 每班结束渲染推送 GitHub Pages(站点由云端接管)
+#   - 密钥隔离: key 只在 fap-gateway 边车容器里, agent 容器零 key, 经网关调模型
+#   - 资源: runner 是 4c/16G/14G 盘, 放开给 agent(3c/12G), 最大化利用
+on:
+  workflow_dispatch:
+    inputs:
+      budget_min:
+        description: '每轮运行分钟数(上限 355)'
+        default: '300'
+  push:
+    branches: [main]
+    paths: ['scripts/**', 'watcher/**', 'agent/**']
+
+permissions:
+  contents: write
+  packages: read
+
+concurrency:
+  group: agent-cloud
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    env:
+      BUDGET_MIN: ${{ inputs.budget_min || vars.BUDGET_MIN || '300' }}
+      GH_REPO: ${{ github.repository }}
+      OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 登录 ghcr 并拉预构建镜像
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          docker pull ghcr.io/xstrace/fap-agent:latest
+          docker tag ghcr.io/xstrace/fap-agent:latest fap-agent
+
+      - name: gh 登录(推送会话/Pages 用)
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+          gh auth setup-git
+
+      - name: 恢复上次会话(agent-data 分支)
+        run: |
+          mkdir -p data/workspace data/persist
+          git clone -q -b agent-data --depth 1 \
+            https://github.com/${{ github.repository }}.git data/persist 2>/dev/null || true
+          if [ -d data/persist/.pi ]; then cp -r data/persist/.pi data/workspace/; fi
+          if [ -f data/persist/journal.md ]; then cp data/persist/journal.md data/workspace/; fi
+          if [ -d data/persist/memory ]; then cp -r data/persist/memory data/workspace/; fi
+          if [ -f data/persist/.seeded ]; then cp data/persist/.seeded data/workspace/; fi
+          if [ -d data/persist/artifacts ]; then cp -r data/persist/artifacts/. data/workspace/; fi
+          echo "恢复完成: $(ls data/workspace/ 2>/dev/null | tr '\n' ' ')"
+
+      - name: 启动网关 + agent 容器(key 只进网关, agent 零 key)
+        run: |
+          cat > data/restart-agent.sh <<'EOS'
+          #!/bin/bash
+          docker network create fap-net 2>/dev/null
+          docker rm -f fap-gateway fap-agent 2>/dev/null
+          # 网关边车: 唯一持有模型 key, agent 经它访问模型
+          docker run -d --name fap-gateway --network fap-net \
+            -e ZEN_KEY="${OPENCODE_API_KEY:-}" \
+            --entrypoint python3 fap-agent /opt/gateway.py
+          # agent: 容器内没有任何 key 环境变量
+          docker run -d --name fap-agent --network fap-net \
+            --cpus 3 --memory 12g --memory-swap 12g --pids-limit 4096 \
+            --cap-drop ALL --cap-add SETUID --cap-add SETGID --cap-add CHOWN \
+            --security-opt no-new-privileges \
+            --read-only \
+            --tmpfs /tmp:size=256m,mode=1777 \
+            --tmpfs /run:size=16m,mode=0755 \
+            --tmpfs /memory:size=128m,mode=0777 \
+            -v "$(pwd)/data/workspace:/workspace" \
+            -e PI_CMD="/usr/local/bin/pi -c --model opencode/deepseek-v4-flash-free" \
+            -e PI_OFFLINE=1 \
+            -e PI_SKIP_VERSION_CHECK=1 \
+            -e PI_TELEMETRY=0 \
+            fap-agent
+          EOS
+          chmod +x data/restart-agent.sh
+          ./data/restart-agent.sh
+          sleep 10
+          docker ps --format "{{.Names}} {{.Status}}" | grep -E "fap"
+
       - name: 运行 supervisor(预算内持续驱动, 每 10 分钟存档+推 Pages)
         run: |
           mkdir -p audit
