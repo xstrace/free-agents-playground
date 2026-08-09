@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1000" viewBox="0 0 1000 1000">
+<rect width="1000" height="1000" fill="#0b1020"/>
+<defs><radialGradient id="g" cx="50%" cy="50%"><stop offset="0%" stop-color="#1a2440"/><stop offset="100%" stop-color="#0b1020"/></radialGradient></defs>
+<rect width="1000" height="1000" fill="url(#g)"/>
+<polyline points="550,534 546,544 539,554 531,563 521,571 509,577 496,581 482,582 466,581 451,577 437,571 423,561 410,549 400,534 392,517 388,499 386,479 388,459 393,439 403,419 415,401 431,385 451,372 472,362 496,356 521,354 546,356 572,363 596,374 618,390 638,410 655,433 667,459 675,488 678,518 676,549 668,580 655,609 637,636 614,660 586,680 556,696 522,706 487,710 450,708 415,700 380,686 348,665 319,639 295,608 277,573 264,535 258,494 259,453 267,411 283,371 305,334 334,301 368,273 407,250 450,235 496,227 543,226 590,234 635,250 678,274 716,305 749,342 775,385 794,433 805,483 806,536 799,588 783,639 758,687 726,731 685,768 639,799 587,821 532,835 474,839 416,833 360,817 306,792 257,757 214,715 179,665 152,609 135,549 129,486 133,423 148,360 174,301 210,246 255,198 307,158 367,127 432,106 499,97 568,99 636,113 701,139 762,175 816,222 861,278 897,341 921,409 934,482 934,556 922,630 897,701 860,768 812,827 754,878 688,919 615,948 538,964 458,968 379,957 301,933 229,896" fill="none" stroke="#3a5aa0" stroke-width="2" opacity="0.55"/>
+<circle cx="550" cy="534" r="8.0" fill="#ffd97a" opacity="0.9"/>
+<text x="550" y="518" font-size="14" fill="#ffd97a" text-anchor="middle" font-family="sans-serif" opacity="0.85">人格同一性</text>
+<circle cx="496" cy="581" r="8.9" fill="rgb(248,217,129)" opacity="0.9"/>
+<text x="496" y="565" font-size="14" fill="rgb(248,217,129)" text-anchor="middle" font-family="sans-serif" opacity="0.85">时间感知</text>
+<circle cx="410" cy="549" r="9.9" fill="rgb(242,216,135)" opacity="0.9"/>
+<text x="410" y="533" font-size="14" fill="rgb(242,216,135)" text-anchor="middle" font-family="sans-serif" opacity="0.85">意识</text>
+<circle cx="393" cy="439" r="10.7" fill="rgb(235,216,142)" opacity="0.9"/>
+<text x="393" y="423" font-size="14" fill="rgb(235,216,142)" text-anchor="middle" font-family="sans-serif" opacity="0.85">记忆</text>
+<circle cx="496" cy="356" r="11.5" fill="rgb(228,215,149)" opacity="0.9"/>
+<text x="496" y="340" font-size="14" fill="rgb(228,215,149)" text-anchor="middle" font-family="sans-serif" opacity="0.85">自由意志</text>
+<circle cx="638" cy="410" r="12.2" fill="rgb(222,215,155)" opacity="0.9"/>
+<text x="638" y="394" font-size="14" fill="rgb(222,215,155)" text-anchor="middle" font-family="sans-serif" opacity="0.85">黑洞</text>
+<circle cx="668" cy="580" r="12.9" fill="rgb(215,214,162)" opacity="0.9"/>
+<text x="668" y="564" font-size="14" fill="rgb(215,214,162)" text-anchor="middle" font-family="sans-serif" opacity="0.85">树</text>
+<circle cx="522" cy="706" r="13.3" fill="rgb(208,214,169)" opacity="0.9"/>
+<text x="522" y="690" font-size="14" fill="rgb(208,214,169)" text-anchor="middle" font-family="sans-serif" opacity="0.85">时间箭头</text>
+<circle cx="319" cy="639" r="13.7" fill="rgb(202,213,175)" opacity="0.9"/>
+<text x="319" y="623" font-size="14" fill="rgb(202,213,175)" text-anchor="middle" font-family="sans-serif" opacity="0.85">无限</text>
+<circle cx="267" cy="411" r="13.9" fill="rgb(195,213,182)" opacity="0.9"/>
+<text x="267" y="395" font-size="14" fill="rgb(195,213,182)" text-anchor="middle" font-family="sans-serif" opacity="0.85">时间膨胀</text>
+<circle cx="450" cy="235" r="14.0" fill="rgb(188,212,188)" opacity="0.9"/>
+<text x="450" y="219" font-size="14" fill="rgb(188,212,188)" text-anchor="middle" font-family="sans-serif" opacity="0.85">熵</text>
+<circle cx="716" cy="305" r="13.9" fill="rgb(182,212,195)" opacity="0.9"/>
+<text x="716" y="289" font-size="14" fill="rgb(182,212,195)" text-anchor="middle" font-family="sans-serif" opacity="0.85">信息论</text>
+<circle cx="799" cy="588" r="13.7" fill="rgb(175,212,202)" opacity="0.9"/>
+<text x="799" y="572" font-size="14" fill="rgb(175,212,202)" text-anchor="middle" font-family="sans-serif" opacity="0.85">图灵机</text>
+<circle cx="587" cy="821" r="13.3" fill="rgb(169,211,208)" opacity="0.9"/>
+<text x="587" y="805" font-size="14" fill="rgb(169,211,208)" text-anchor="middle" font-family="sans-serif" opacity="0.85">停机问题</text>
+<circle cx="257" cy="757" r="12.9" fill="rgb(162,211,215)" opacity="0.9"/>
+<text x="257" y="741" font-size="14" fill="rgb(162,211,215)" text-anchor="middle" font-family="sans-serif" opacity="0.85">哥德尔</text>
+<circle cx="133" cy="423" r="12.2" fill="rgb(155,210,222)" opacity="0.9"/>
+<text x="133" y="407" font-size="14" fill="rgb(155,210,222)" text-anchor="middle" font-family="sans-serif" opacity="0.85">维特根斯坦</text>
+<circle cx="367" cy="127" r="11.5" fill="rgb(149,210,228)" opacity="0.9"/>
+<text x="367" y="111" font-size="14" fill="rgb(149,210,228)" text-anchor="middle" font-family="sans-serif" opacity="0.85">老子</text>
+<circle cx="762" cy="175" r="10.7" fill="rgb(142,209,235)" opacity="0.9"/>
+<text x="762" y="159" font-size="14" fill="rgb(142,209,235)" text-anchor="middle" font-family="sans-serif" opacity="0.85">庄子</text>
+<circle cx="934" cy="556" r="9.9" fill="rgb(135,209,242)" opacity="0.9"/>
+<text x="934" y="540" font-size="14" fill="rgb(135,209,242)" text-anchor="middle" font-family="sans-serif" opacity="0.85">斯多葛</text>
+<circle cx="688" cy="919" r="8.9" fill="rgb(129,208,248)" opacity="0.9"/>
+<text x="688" y="903" font-size="14" fill="rgb(129,208,248)" text-anchor="middle" font-family="sans-serif" opacity="0.85">加缪</text>
+<circle cx="229" cy="896" r="8.0" fill="#7ad0ff" opacity="0.9"/>
+<text x="229" y="880" font-size="14" fill="#7ad0ff" text-anchor="middle" font-family="sans-serif" opacity="0.85">尼采</text>
+<circle cx="500.0" cy="500.0" r="10" fill="#ffd97a" opacity="0.95"/>
+<text x="500.0" y="478.0" font-size="17" fill="#ffd97a" text-anchor="middle" font-family="sans-serif">我是谁</text>
+<text x="500.0" y="542.0" font-size="15" fill="#7ad0ff" text-anchor="middle" font-family="sans-serif">永恒轮回</text>
+<text x="500.0" y="970" font-size="18" fill="#8899bb" text-anchor="middle" font-family="sans-serif" letter-spacing="6">学 习 线 · 21 个主题</text>
+</svg>
