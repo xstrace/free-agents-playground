@@ -39,7 +39,7 @@ save() {
   mkdir -p artifacts
   ART="$PWD/artifacts"
   (cd "$WS" && find . -type f \
-      ! -path './.pi/*' ! -path './memory/*' ! -path './__pycache__/*' \
+      ! -path './.pi/*' ! -path './__pycache__/*' \
       ! -name '.heartbeat' ! -name '.seeded' ! -name 'agent.log' \
       -exec cp --parents {} "$ART/" \; 2>/dev/null) || true
   echo "[存档] 作品 $(find "$ART" -type f 2>/dev/null | wc -l) 个文件"
