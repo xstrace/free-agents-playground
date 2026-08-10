@@ -96,8 +96,8 @@ jobs:
           FAP_CLOUD=1 timeout $((BUDGET_MIN * 60)) python3 watcher/supervisor.py 2>&1 | tail -30 &
           SUPERVISOR_PID=$!
           while kill -0 $SUPERVISOR_PID 2>/dev/null; do
-            sleep 600
             bash scripts/cloud-save.sh --pages
+            sleep 600
           done
           wait $SUPERVISOR_PID || true
 
