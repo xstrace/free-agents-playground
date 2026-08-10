@@ -11,7 +11,9 @@ echo "[site] 更新 gh-pages..."
 rm -rf data/pages-repo-site
 git clone -q --depth 1 -b gh-pages https://github.com/xstrace/free-agents-playground.git data/pages-repo-site
 cd data/pages-repo-site
-rm -f index.html
+# 清理旧手写版残留(避免与 Vue 构建产物混用)
+rm -f index.html app.js style.css
+rm -rf assets
 cp -r ../../site/dist/* .
 git add -A
 git -c user.name=free-agents -c user.email=free-agents@localhost \
